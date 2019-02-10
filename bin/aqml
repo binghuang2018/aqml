@@ -7,6 +7,7 @@ import io2, os, sys, re, time
 #from ase import Atom, Atoms
 import cml.distance as cmld
 import cml.kernels as cmlk
+import cml.slatm as csl
 from cml.representations import generate_slatm
 import cheminfo as co
 from cheminfo.rw.xyz import *
@@ -14,25 +15,27 @@ import argparse as ap
 import deepdish as dd
 import multiprocessing as mt
 import representation.slatm_x as sl
+import cheminfo.data.atoms as cda
+import ase.io as aio
 
 T, F = True, False
-
-
-
 
 uc = io2.Units()
 
 class atoms(object):
     def __init__(self, f, pns=None, unit='h'):
-        nas, zs, coords, nsheav, props = read_xyz_simple(f, opt='z', property_names=pns)
-        self.coords = np.array(coords)
-        self.na = nas[0]
-        self.nheav = nsheav[0]
+        #nas, zs, coords, nsheav, props = read_xyz_simple(f, opt='z', property_names=pns)
+        mi = aio.read(f)
+        zs = mi.numbers
+        self.coords = mi.positions #np.array(coords)
+        self.na = len(mi) #nas[0]
+        self.nheav = (zs>1).sum() #nsheav[0]
         #print('pn=',pns, props.keys())
-        const = 1. 
-        if unit in ['h']: const = io2.Units().h2kc
-        self.y = props[pns[0]] * const
-        self.zs = np.array(zs, dtype=int)
+        #const = {'h': uc.h2kc, 'eV': uc.e2kc}[unit]
+        props = mi.info
+        self.y = props[pns[0]] #* const
+        self.zs = zs #np.array(zs, dtype=int)
+        self.cell = mi.cell
 
 
 class molecules(object):
@@ -121,37 +124,55 @@ def get_reference_atomic_energy(ref, meth, zs=None):
 
 def calc_ae_dressed(obj, idx1, idx2, meth=None, ref=None):
     ims = np.arange(obj.nm)
-    ns1, ns2 = obj.ngs[idx1], obj.ngs[idx2]
+    ns1 = obj.ngs[idx1]
+    ns2 = obj.ngs[idx2]
+    ns = np.concatenate((ns1,ns2), axis=0)
     nel = len(ns1[0]) # number of elements
     if meth is None:
         pns = obj.property_names
         assert len(pns)==1, '##ERROR: plz specify `meth'
         meth = pns[0]
-    ys = obj.ys
+    ys = obj.props[meth].ravel()
     ys1, ys2 = ys[idx1], ys[idx2]
     rank = np.linalg.matrix_rank(ns1)
     istat = T
+    esb = np.zeros(ns1.shape[1])
     if ref is None:
         if rank < nel:
-            #print( ' ** insufficient rank, i.e., effective mols .le. number of elements' )
-            # that is, lstsq won't be effective
-            if rank==1: # e.g., water clusters, i.e., (H2O)_N
-                ns1 = ns1[:,:1]
-                ns2 = ns2[:,:1]
+            #print('ys1=', ys1, 'len(ys1)=',len(ys1))
+            t1 = cc.Matrix(ns1)
+            t = cc.Matrix(ns)
+            #print('ns=', ns)
+            #print('t1.rank=', t1.rank, 't.rank=', t.rank)
+            #print('t1.idx=', t1.idx, 't.idx=',t.idx)
+            if (t1.rank != t.rank): istat = F
+            if (t1.idx != t.idx): istat = F
+            if istat:
+                ns1 = ns1[:,t.idx]
+                ns2 = ns2[:,t.idx]
                 esb,_,rank,_ = np.linalg.lstsq(ns1,ys1,rcond=None)
             else:
-                istat = F 
-                esb = np.zeros(nel)
+                prog = None
+                c = uc.h2kc ######### aaaa
+                if meth in ['pbe340', 'pbe450']:
+                    prog = 'vasp'
+                else:
+                    prog = 'orca'
+                try:
+                    esb = [ c * cda.dct[prog][co.chemical_symbols[zl]][meth] for zl in obj.zsu ]
+                    #print('esb=',esb)
+                except:
+                    print(' ** warning: atomic energy at level %s not available'%meth)
+                istat = T
         else:
             esb,_,rank,_ = np.linalg.lstsq(ns1,ys1,rcond=None)
     else:
         esb = get_reference_atomic_energy(ref, meth, obj.zsu)
     ys1p = np.dot(ns1,esb)
-    #print ' +++++ ys1.shape, ys1p.shape = ', ys1.shape, ys1p.shape
     dys1 = ys1 - ys1p
     ys2_base = np.dot(ns2,esb)
     dys2 = ys2 - ys2_base
-    return istat, dys1, dys2, ys2_base
+    return istat, dys1, dys2, esb
 
 
 class fobj(object):
@@ -222,7 +243,8 @@ def get_kernel_width(nas, zs, x, cab=F, kernel='g', itarget=F, debug=F):
     dso = np.ones(zmax) * 1.e-9 # in Fortran, first entry: 1
     for i,zi in enumerate(zsu):
         dso[zi-1] = dsmax[i]
-    print('    dsmax=', dict(zip(zsu,dsmax)))
+    if debug:
+        print('    dsmax=', dict(zip(zsu,dsmax)))
     #print('dso=',dso)
     return dso
 
@@ -281,26 +303,6 @@ def calc_ka(x2, x1, zs2, zs1, nas2, nas1, cab, zmax, sigmas, zaq=None, kernel='g
     return ks
 
 
-def get_slatm_mbtypes(zsu, nzs):
-    """ get slatm many-body types"""
-    nzs = np.max(nzs, axis=0)
-    boas = [ [zi,] for zi in zsu ]
-    bops = [ [zi,zi] for zi in zsu ] + list( itl.combinations(zsu,2) )
-    bots = []
-    for i in zsu:
-        for bop in bops:
-            j,k = bop
-            tas = [ [i,j,k], [i,k,j], [j,i,k] ]
-            for tasi in tas:
-                if (tasi not in bots) and (tasi[::-1] not in bots):
-                    nzsi = [ (zj == np.array(tasi)).sum() for zj in zsu ]
-                    if np.all(nzsi <= nzs):
-                        bots.append( tasi )
-    mbtypes = boas + bops + bots
-    #nsx = np.array([len(mb) for mb in [boas,bops,bots]],np.int)
-    #ins2 = np.cumsum(nsx)
-    #ins1 = np.array([0,ins2[0],ins2[1]],np.int)
-    return mbtypes
 
 def toidxs(li):
     """ input = ['1', '2-3', '12-16'] (absolute idx)
@@ -325,6 +327,8 @@ def varparser(ipt):
     if isinstance(ipt,str):
         ipt = ipt.split()
 
+    ps.add_argument('-prog', nargs='?', type=str, help='Ab-initio program used for calc mol props')
+
     ps.add_argument('-nprocs', '--nprocs', nargs='?', type=int, help='Number of threads to be used')
 
     ps.add_argument('-bj', dest='bj', action='store_true', help='manually add dft-d3 correction to energy?')
@@ -344,25 +348,28 @@ def varparser(ipt):
     ps.add_argument('-cab', action='store_true', help='calc atomic kernel between dissimilar atoms')
     ps.add_argument('-reusek','--reusek', dest='reusek', action='store_true', help=' (optional) load kernel from existing kernel file?')
     ps.add_argument('-savek','--savek', dest='savek', action='store_true', help=' (optional) save kernel or not?')
+
+    ps.add_argument('-pbc', dest='pbc', action='store_true', help=' periodic boundary condition? T/F')
+
     ps.add_argument('-fk','--fk', dest='fk', type=str, nargs='?', help=' (optional) the file to which calculated kernel is to be saved')
     ps.add_argument('-savex','--savex', dest='savex', action='store_true')
     ps.add_argument('-reusex','--reusex', dest='reusex', action='store_true')
     ps.add_argument('-fx1','--fx1', dest='fx1', type=str, nargs='?', help=' (optional) filename of x_train (x: mol representation')
     ps.add_argument('-fx2','--fx2', dest='fx2', type=str, nargs='?', help=' (optional) filename of x_test (x: mol representation')
 
-    ps.add_argument('-train','--train', nargs='*', type=str, help='Name of the folder(s) containing all training mols')
+    ps.add_argument('-s1', '-train', dest='train', nargs='*', type=str, help='Name of the folder(s) containing all training mols')
 
-    ps.add_argument('-exclude','-remove','--exclude','--remove', dest='_exclude', nargs='*', type=str, help='molecular idxs (for all mols, i.e., including mols from all training folders) to be excluded for training')
+    ps.add_argument('-exclude','-remove','--exclude','--remove', dest='_exclude', nargs='*', type=str, help='molecular idxs (for all mols, i.e., including mols from all training folders) to be excluded for training, could be either mol idx or "k8", meaning all amons having N_I=8')
     ps.add_argument('-keep','--keep', dest='_keep', nargs='*', type=str, help='molecular idxs (in the j-th training folder, where `j must be specified as a negative integer) to be kept for training, skip the rest. E.g., "-keep -1 35 40-49 -2 23-25" would keep mols with idx 35, 50-59 in ag.train[-1] and mols 23-25 in ag.train[-2]!')
 
     ps.add_argument('-l', '-lambda', '-lambdas', dest='lambdas', nargs='?', type=str, default='4.0', help='regularization parameter, Default: 4. Multiple values is possible through the string format of "4,8,10" and corresponding lambdas to be used are [10^{-n} for n in [4,8,10]]')
 
-    ps.add_argument('-test', '--test', nargs='*', type=str, help='Name of the folder(s) containing all test molecules')
+    ps.add_argument('-s2', '-test', dest='test', nargs='*', type=str, help='Name of the folder(s) containing all test molecules')
     ps.add_argument('-n2', '--n2', nargs='?', type=int, help='Number of test molecules; must be specified when no test folder ia avail')
     ps.add_argument('-i1by1', action='store_true', help='is training/test to be done 1 by 1?')
     ps.add_argument('-idx1', nargs='*', dest='_idx1', type=str, help='specify training set by idxs of mols')
     ps.add_argument('-idx2', nargs='*', dest='_idx2', type=str, help='specify test set by idxs of mols')
-    ps.add_argument('-iaml', dest='iaml', nargs='?', default='T', type=str, help='use AML?')
+    ps.add_argument('-iaml', dest='iaml', nargs='?', default='T', type=str, help='use AML? Default: T')
     ps.add_argument('-i2', dest='i2', nargs='?', type=int, help='Target mol idx')
     ps.add_argument('-add', nargs='*', default=[], type=int, help='Idx of mols to be added for training, default is []')
     ps.add_argument('-dmxby', nargs='?', default='a', type=str, help='calc `dmax using amons/target/all?')
@@ -388,12 +395,17 @@ def varparser(ipt):
 
     exclude = []   
     nr = 0
-    if ag._exclude:
-        exclude = toidxs(ag._exclude)
-        nr = 1
-        if ag.debug:
-            print(' idx of mols to be removed:', exclude)
-    ag.exclude = list(set(exclude))
+    idso = ag._exclude
+    if idso:
+        if len(idso)==1 and idso[0]=='k':
+            ag.exclude = int(idso[1:]) # str
+        else:
+            exclude = toidxs(ag._exclude)
+            nr = 1
+            if ag.debug:
+                print(' idx of mols to be removed:', exclude)
+            exclude = list(set(exclude))
+    ag.exclude = exclude
 
     dirsk = []; idxsk = [] #keep = [] ##### aaaa
     nk = 0
@@ -456,7 +468,8 @@ def glc(ipt):
     nfd = len(ag.train)
     for i,_wd in enumerate(ag.train):
         wd = _wd if _wd[-1] != '/' else _wd
-        print('_wd=',_wd)
+        if ag.debug:
+            print('_wd=',_wd)
         #if not os.path.exists(w0+wd):
         #    try:
         #        wd += '_extl/'
@@ -466,7 +479,8 @@ def glc(ipt):
         _fsi = io2.cmdout('ls %s%s/*.xyz'%(w0,wd))
         #print('fsi=',_fsi)
         if len(_fsi) == 0:
-            print(' ** folder %s is empty'%wd)
+            if ag.debug:
+                print(' ** folder %s is empty'%wd)
             continue
 
         ii = i-nfd
@@ -477,17 +491,19 @@ def glc(ipt):
 
         _fs1 += fsi
 
-    fs = _fs1
-    n1t = len(_fs1)
+    ## The 'copy()' below is essential! Otherwise, 
+    ## we will end up with `_fs1 being equal to `fs!!
+    fs = _fs1.copy() 
 
+    n1t = len(_fs1)
     fmap = None 
-    print('test=',ag.test)
+    if ag.debug: print('test=',ag.test)
     if ag.test is not None:
         fs2 = []
         for wd in ag.test:
-            fsi = io2.cmdout('ls %s%s/*.xyz'%(w0,wd))
-            assert len(fsi) > 0
-            fs2 += fsi
+            fsj = io2.cmdout('ls %s%s/*.xyz'%(w0,wd))
+            assert len(fsj) > 0
+            fs2 += fsj
         n2 = len(fs2)
         assert n2>0, '#ERROR: no xyz files found in target folder'
         fs += fs2
@@ -495,7 +511,7 @@ def glc(ipt):
             fmap = ag.train[0]+'/map.h5'
         fs1 = _fs1
     else:
-        print('n2 = ', ag.n2)
+        if ag.debug: print('n2 = ', ag.n2)
         if ag.n2 is not None: #len(ag._idx1)==0:
             fs1 = _fs1[:-ag.n2]
             fs = _fs1  
@@ -515,7 +531,7 @@ def glc(ipt):
         if len(ps) > 1:
             print(' Property list: ', ps )
             raise Exception('#ERROR: pls specify one property!')
-        print('    set property to "%s"'% ps[0])
+        if ag.debug: print('    set property to "%s"'% ps[0])
         ag.p = ps[0]
 
     unit = 'h'
@@ -553,19 +569,24 @@ def glc(ipt):
 
     isimple = F
     if iap:
-        isimple = T
+        isimple = T 
 
     os.environ['OMP_NUM_THREADS'] = "%d"%ag.nprocs
+
+
 
     for l in range(loops):
 
         if maps is None:
             n1 = n1t
             if ag.i1by1:
-                fsi = fs1 + fs2[l:l+1]
+                if ag.debug:
+                    print('fs1=',fs1)
+                    print('fs2=', fs2[l:l+1])
+                fsk = fs1 + fs2[l:l+1]
                 print('i=',n1+l+1) #, 'n1=',n1) #, 'idx1=[%s]'%(','.join(['%d'%(ix+1) for ix in idx])), ' idx2=',[n1t+l+1])
             else:
-                fsi = fs
+                fsk = fs
         else:
             _idx = maps[l]
             idx1 = list( _idx[_idx>-1] )
@@ -576,19 +597,20 @@ def glc(ipt):
             idx = list(set(idx1).difference(set(ag.exclude)))
             idx.sort() 
             n1 = len(idx)
-            fsi = [ fs[_] for _ in idx + [n1t+l] ]
-            print('i=',l+1, 'n1=',n1)
+            fsk = [ fs[_] for _ in idx + [n1t+l] ]
+            if ag.debug: print('i=',l+1, 'n1=',n1)
             if ag.iprta:
                 print('idx1=[%s]'%(','.join(['%d'%(ix+1) for ix in idx])), ' idx2=',[n1t+l+1])
 
         if ag.debug: 
-            comm = list( set(idx1).intersection(set(ag.exclude)) )
-            print('    deleted mols:', np.array(comm,dtype=int)+1)
-            print('    final training mols:', fs)
+            if maps is not None:
+                comm = list( set(idx1).intersection(set(ag.exclude)) )
+                print('    deleted mols:', np.array(comm,dtype=int)+1)
+                print('    final training mols:', fs)
 
 
-        ms = [ atoms(f,[ag.p],unit=unit) for f in fsi ]
-        nml = len(fsi)
+        ms = [ atoms(f,[ag.p],unit=unit) for f in fsk ]
+        nml = len(fsk)
         ims = np.arange(nml)
         ims1 = ims[:n1]
         ims2 = ims[n1:]
@@ -598,18 +620,19 @@ def glc(ipt):
             const = 1.0
 
         if ag.fp is None:
-            obj = cc.molecules(fsi, [ag.p], unit=unit, isimple=isimple)
+            obj = cc.molecules(fsk, [ag.p], unit=unit, isimple=isimple)
             ys = obj.ys; #print('ys=',ys)
         else:
-            obj = cc.molecules(fsi) #, [ag.p], unit=unit)
+            obj = cc.molecules(fsk) #, [ag.p], unit=unit)
             p = ag.fp[:-4]
             ys = np.loadtxt(ag.fp) * const # use filename as property name
 
+        #print('ngs=\n', obj.ngs)
 
         if ag.bj:
             ifd = F
             for xc in ['pbe','b3lyp',]:
-                if xc in p:
+                if xc in ag.p:
                     if xc in ['b3lyp',]:
                         fun = {'b3lyp':'b3-lyp'}[xc]
                     else:
@@ -633,25 +656,30 @@ def glc(ipt):
         zs = obj.zs
         zmax = np.max(zs)
         ys = np.array(obj.props[ag.p])
-        #obj.ys = ys
  
-        # Assume 'qm7' is a list of Compound() objects.
-        mbtypes = get_slatm_mbtypes(zsu, nzs)
+        mb = csl.NBody(obj) #[ims2]) # determine many-body types by targets only
+        mbtypes = mb.get_slatm_mbtypes()
         #print('mbtypes = ', mbtypes)
  
         cab=ag.cab
         dgrids = [0.04,0.04]; widths = [0.05,0.05]
 
+        if ag.savex or ag.savek:
+            if not os.path.exists('data/'):
+                os.mkdir('data/')
+
         # now x1 (training set)
         fn1 = ag.train[0]
         if fn1[-1] == '/': fn1 = fn1[:-1]
+        fn1 = 'data/' + '-'.join(fn1.split('/'))
         if ag.rcut != 4.8:
             fn1 += '-rc%.1f'%ag.rcut
 
         if iap:
             fn1 += '-z%d'%ag.z
-
         fx1 = fn1 + '-x1.npz'
+        #print('f1=', fn1)
+
         zs1=[]; nas1=[]; nhvs1=[]
         for i in ims1:
             zs1 += list(ms[i].zs)
@@ -660,14 +688,13 @@ def glc(ipt):
         namax = np.max(nhvs1)
         fn2 = ag.test[0]
         if fn2[-1] == '/': fn2 = fn2[:-1]
-
+        fn2 = 'data/' + '-'.join(fn2.split('/'))
         if ag.rcut != 4.8:
             fn2 += '-rc%.1f'%ag.rcut
-
         if iap:
             fn2 += '-z%d'%ag.z
-
         fx2 = fn2 + '-x2.npz'
+
         zs2=[]; nas2=[]; nhvs2=[]
         for i in ims2:
             mi = ms[i]
@@ -676,6 +703,7 @@ def glc(ipt):
             nhvs2 += [mi.nheav]
         nas = nas1 + nas2
         fk = fn1 + '-kernels%s.npz'%( {'g':'', 'l':'-l'}[ag.kernel[0]] )
+        #print('fk=',fk)
 
         debug = ag.debug
 
@@ -712,10 +740,12 @@ def glc(ipt):
             dsk = np.load(fk)
             ks1 = dsk['ks1']; ks2 = dsk['ks2']
             print('       kernels read with success')
-            #print(' nm1=',len(ims1), 'shp1=',ks1[0].shape, 'shp2=',ks2[0].shape)
+            print(' nm1=',len(ims1), 'shp1=',ks1[0].shape, 'shp2=',ks2[0].shape)
             if iap:
-                assert (obj[ims1].zs==ag.z).sum() == ks1[0].shape[0]
-                assert (obj[ims2].zs==ag.z).sum() == ks2[0].shape[0]
+                nz1 = (obj[ims1].zs==ag.z).sum(); nz2 = (obj[ims2].zs==ag.z).sum() 
+                print('nz1=', nz1, 'nz2=',nz2)
+                assert nz1 == ks1[0].shape[0]
+                assert nz2 == ks2[0].shape[0]
             else:
                 assert len(ims1) == ks1[0].shape[0] and len(ims2) == ks2[0].shape[0]
         else:
@@ -723,7 +753,7 @@ def glc(ipt):
                 _x = []
                 for i in ims1:
                     mi = ms[i]
-                    xi = generate_slatm(mi.coords, mi.zs, mbtypes, local=T, sigmas=widths, dgrids=dgrids, rcut=rcut)
+                    xi = generate_slatm(mi.coords, mi.zs, mbtypes, local=T, sigmas=widths, dgrids=dgrids, rcut=rcut, pbc=ag.pbc, cell=mi.cell)
                     _x.append(xi)
                 x1 = np.concatenate(_x)
                 if ag.savex:
@@ -740,7 +770,7 @@ def glc(ipt):
                 _x = []
                 for i in ims2:
                     mi = ms[i]
-                    xi = generate_slatm(mi.coords, mi.zs, mbtypes, local=T, sigmas=widths, dgrids=dgrids, rcut=rcut)
+                    xi = generate_slatm(mi.coords, mi.zs, mbtypes, local=T, sigmas=widths, dgrids=dgrids, rcut=rcut, pbc=ag.pbc, cell=mi.cell)
                     _x.append(xi)
                 x2 = np.concatenate(_x)
                 if ag.savex:
@@ -760,7 +790,7 @@ def glc(ipt):
                 dsmax = get_kernel_width(nas, zs1+zs2, np.concatenate((x1,x2)), kernel=ag.kernel, cab=cab, debug=debug)
             else:
                 raise Exception('#ERROR: unknown ag.dmxby')
-            print('cab=',cab, 'dsmax=', dsmax)
+            #print('cab=',cab, 'dsmax=', dsmax)
 
             fun = fobj(ag.kernel)
 
@@ -819,6 +849,7 @@ def glc(ipt):
           for il, llambda in enumerate(llambdas):
             print('    coeff=', coeff, 'llambda=',llambda)
             for ni in range(1,1+namax):
+              if namax > 12 and (ni not in nhvs1): continue
               idx1 = ims1[np.array(nhvs1) <= ni]
               if len(idx1) == 0: continue 
 
@@ -841,11 +872,12 @@ def glc(ipt):
 
               if iap: 
                 #print(' atomic property: shift `ys to center')
-                ysp = obj.props[ag.p]
+                ysp = obj.props[ag.p]; #print('ysp=',ysp)
                 ys1 = []
                 for it in idx1:
                     ib = obj.ias1[it]; ie = obj.ias2[it]
                     ysi = ysp[it]
+                    #print('ysi=', ysi)
                     ys1 += list( ysi[obj.zs[ib:ie]==ag.z] )
                 ys2 = []
                 for it in idx2:
@@ -859,16 +891,25 @@ def glc(ipt):
                 istat = T
               else:
                 #print(' extensive property: dressed atom contrib')
-                istat, ys1, ys2, _ = calc_ae_dressed(obj, idx1, idx2, meth=ag.p, ref=ag.ref)
+                istat, ys1, ys2, esb = calc_ae_dressed(obj, idx1, idx2, meth=ag.p, ref=ag.ref)
+
+              #irp = F
+              #if np.linalg.matrix_rank(obj.ngs[idx1]) < 
 
               #print('ys1=', list(ys1))
               #print('ys2=',ys2)
-              if not istat:
-                  if len(ys2)==1:
-                      print('  %2d %6d %12.4f %12.4f'%(ni,len(idx1),np.nan, np.nan))
+              obsolete = """if not istat:
+                  if np.all(np.array(esb)==0):
+                      if len(ys2)==1:
+                          print('  %2d %6d %12.4f %12.4f'%(ni,len(idx1),np.nan, np.nan))
+                      else:
+                          print('  %2d %6d %12.4f %12.4f %12.4f'%(ni,len(idx1),np.nan, np.nan, np.nan))
                   else:
-                      print('  %2d %6d %12.4f %12.4f %12.4f'%(ni,len(idx1),np.nan, np.nan, np.nan))
-                  continue
+                      if len(ys2)==1:
+                          print('  %2d %6d %12.4f %12.4f'%(ni,len(idx1), abs(ys2[0]), ys2[0]))
+                      else:
+                          print('  %2d %6d %12.4f %12.4f %12.4f'%(ni,len(idx1),np.nan, np.nan, np.nan))
+                  continue"""
  
               #print('k1.shape = ', k1.shape, 'ys1.shape=',ys1.shape)
               k1[np.diag_indices_from(k1)] += llambda
@@ -880,16 +921,25 @@ def glc(ipt):
               rmse = np.sqrt(np.sum(dys2*dys2)/len(dys2))
               errmax = np.max(np.abs(dys2))
 
-              if len(dys2)==1:
-                  print('  %2d %6d %12.4f %12.4f  (DressedAtom mae=%12.4f)'%(ni,len(idx1),mae,dys2[0], -ys2[-1]))
+              #if len(dys2)==1:
+              #    print('dys2=',dys2, 'ys2=',ys2)
+              #    print('  %2d %6d %12.4f %12.4f  (DressedAtom mae=%12.4f)'%(ni,len(idx1),mae,dys2[0], -ys2[-1]))
+              #else:
+              if iap:
+                print('  %2d %6d %12.4f %12.4f %12.4f  (mean=%12.4f)'%(ni,len(idx1),mae,rmse,errmax, ys1_base))
               else:
-                  if iap:
-                    print('  %2d %6d %12.4f %12.4f %12.4f  (mae=%12.4f)'%(ni,len(idx1),mae,rmse,errmax, ys1_base))
-                  else:
-                    print('  %2d %6d %12.4f %12.4f %12.4f  (DressedAtom mae=%12.4f)'%(ni,len(idx1),mae,rmse,errmax, -ys2[-1]))
+                if len(dys2)==1:
+                  yerr = dys2[-1]
+                  #if np.abs(ys2p[-1]) > np.abs(obj.ys[idx2][-1]):
+                  #   yerr = -obj.ys[idx2][-1]
+                  print('  %2d %6d %12.4f %12.4f  (DressedAtom mae=%12.4f)'%(ni,len(idx1),mae, yerr, -ys2[-1]))
+                else:
+                  yerr = np.mean(np.abs(dys2))
+                  print('  %2d %6d %12.4f %12.4f %12.4f  (DressedAtom mae=%12.4f)'%(ni,len(idx1),mae,rmse,errmax, yerr)) #-ys2[-1]))
               if ag.iprta and ni==namax:
                   print( '  detailed outcomes of prediction:')
-                  print( '      ', dict(zip(1+idx2, [eval('%.2f'%yi) for yi in dys2])) )
+                  #print( '      ', dict(zip(1+idx2, [eval('%.2f'%yi) for yi in dys2])) )
+                  print( 'esb=',esb, 'ys2,ys2p,dys2=\n', np.concatenate(([ys2],[ys2p],[dys2]), axis=0).T)
 
             if ag.i_disp_eaq:
                 if not ag.iaml:
@@ -897,15 +947,33 @@ def glc(ipt):
                 #print('ksa21=', ksa21)
                 #print('alpha.size=',alphas.size, ksa21[ic].shape)
                 easq = np.dot(ksa21[ic], alphas) #get_easq(idx=l) # `l is the idx of mol in test set!
+                assert len(dys2) == 1
+                assert np.abs(easq.sum() - ys2p[0]) <= 0.001
+                if ag.prog is None:
+                    print(' *** for display of atomic contrib to AE, please specify -prog g09/orca/molpro')
+                    sys.exit(2)
+                edct = dict(zip(obj.zsu, esb))
+                prefactor = {'h': uc.h2kc, }[unit]
+                eas0u = [ prefactor * cda.dct[ag.prog][co.chemical_symbols[zl]][ag.p] for zl in obj.zsu ]
+                eas0 = dict(zip(obj.zsu, eas0u))
+
+                zsq = []
+                for it in idx2: 
+                    ib = obj.ias1[it]; ie = obj.ias2[it]
+                    zsq += list(obj.zs[ib:ie])
+
+
                 sq = '\n'
                 for ja,eaj in enumerate(easq):
                     suffix = '\n'
+                    zj = zsq[ja]
                     if eaj == easq[-1]:
                         suffix = ''
-                    sq += '    %4d %8.2f%s'%(ja+1, eaj, suffix)
-                print('     atomic energies: ', sq)
-                print(' =====================')
-                print('            sum: %.2f'%( sum(easq) ))
+                    sq += '    %4d %3d %8.2f%s'%(ja+1, zj, eaj+edct[zj]-eas0[zj], suffix)
+                print('\natomic energies')
+                print('    #atm  #Z     #E_A', sq)
+                #print(' =====================')
+                #print('            sum: %.2f'%( sum(easq) ))
 
             if istat and len(dys2)==1:
                 _key = 'ic%dil%d'%(ic,il)
@@ -929,9 +997,10 @@ if __name__ == "__main__":
     #for i in range(3):
     #    print('')
     t0 = time.time()
-    print(' now running:')
-    print(' '.join(args))
+    print('Running\n```bash')
+    cmd = args[0]; opts = args[1:]
+    print(' '.join([os.path.basename(cmd)]+opts), '\n```\ngives\n```bash\n')
     glc(args[1:])
 
-    print(' elapsed time: ', time.time() - t0, ' seconds' )
+    print(" elapsed time: ", time.time() - t0, " seconds\n```" )
 

@@ -694,6 +694,7 @@ class RDMol(object):
                 #if doff:
                 if AllChem.EmbedMolecule(mu):
                     print('RDKit failed to embed, use openbabel instead!')
+                    #raise
                     import cheminfo.openbabel.obabel as cib
                     s2 = cib.Mol(obj, make3d=True)
                     self.keep_parent = T # in this case, keep the parent geom as the only conformer

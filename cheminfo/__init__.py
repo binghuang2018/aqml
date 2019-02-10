@@ -93,25 +93,30 @@ class atoms(object):
         if 'nmr' in props:
             so += 'nmr=%d '%icol
             icol += 1
+        if 'cls' in props:
+            so += 'cls=%d '%icol
+            icol += 1
         if 'grads' in props:
             so += 'grads=%d '%icol
 
         if len(props) > 0:
             for key in props.keys():
-                if key not in ['chgs','nmr','grads']:
+                if key not in ['chgs','nmr','cls','grads']:
                     so += '%s=%s '%(key,str(props[key]))
         so += '\n'
         icnt = 0
         for si,(x,y,z) in zip(symbols, coords):
-            chgi = ''; nmri = ''; gradi = ''
+            chgi = ''; nmri = ''; gradi = ''; clsi = ''
             if 'chgs' in props:
                 chgi = ' %9.4f'%props['chgs'][icnt]
             if 'nmr' in props:
                 nmri = ' %9.4f'%props['nmr'][icnt]
+            if 'cls' in props:
+                clsi = ' %9.4f'%props['cls'][icnt]
             if 'grads' in props:
                 fxi,fyi,fzi = props['grads'][icnt]
                 gradi = ' {:8.4f} {:8.4f} {:8.4f}'.format(fxi,fyi,fzi)
-            so += '{:>6} {:15.8f} {:15.8f} {:15.8f}{chg}{nmr}{grad}\n'.format(si,x,y,z,chg=chgi,nmr=nmri,grad=gradi)
+            so += '{:>6} {:15.8f} {:15.8f} {:15.8f}{chg}{nmr}{cls}{grad}\n'.format(si,x,y,z,chg=chgi,nmr=nmri,cls=clsi,grad=gradi)
             icnt += 1
         with open(f,'w') as fid: fid.write(so)
 

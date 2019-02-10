@@ -1012,13 +1012,21 @@ class newmol(object):
             self._rdmol = Chem.MolFromMolBlock(ctab)
         return self._rdmol
 
+
     @property
     def hybs(self):
         """ hybridization states """
         if not hasattr(self, '_hybs'):
             hybs = []
+            ia = 0
             for ai in self.mol.GetAtoms():
-                hybs.append( oechem.OEGetHybridization(ai) )
+                if self.zs[ia]==7 and self.cns[ia]==3:
+                    hyb = 3
+                    if ia in self.iasNsp2: hyb = 2
+                    hybs.append(hyb)
+                else:
+                    hybs.append( oechem.OEGetHybridization(ai) )
+                ia += 1
             hybs = np.array(hybs, dtype=int)
             self._hybs = hybs #[self.iasv]
         return self._hybs
@@ -1064,14 +1072,6 @@ class newmol(object):
 
          """
         if not hasattr(self, '_irddt'):
-
-            # correct hybridization states of N's:
-            # i.e., for  >N-, hyb reset to 1, even for >N-C=O
-            #hybs = self.hybs
-            # fix for N,
-            #for ia in self.iasN3:
-            #    hybs[ia] = 3
-            #    print('hyb of ia=%d reset to 3'%ia)
 
             irddt = F
             iash = self.iasv
@@ -1222,14 +1222,14 @@ class newmol(object):
             self._iconjr = ( (self.i5r and nca>=5) or (self.i6r and nca>=6) )
         return self._iconjr
 
-    @property
-    def inco2(self):
-        """ if there exists env N-C(=O)-, where N could be sp2 or sp3 hybridized"""
-        if not hasattr(self, '_inco'):
-            patt = '[#6](=[#8,#16])~[#7]~[#6](=[#8,#16])'
-            tf, _, _ = is_subg(self.mol, patt)
-            self._inco = tf
-        return self._inco
+
+
+
+
+
+
+
+
 
 
     @property
@@ -1570,6 +1570,41 @@ class newmol(object):
         return iasPS
 
     @property
+    def inco2(self):
+        """ if there exists env N-C(=O)-, where N could be sp2 or sp3 hybridized"""
+        if not hasattr(self, '_inco2'):
+            patt = '[#6](=[#8])~[#7]~[#6](=[#8,#16])'
+            tf, _, _ = is_subg(self.mol, patt)
+            self._inco2 = tf
+        return self._inco2
+
+
+    @property
+    def iasNsp2(self):
+        """ N atoms that are sp2-hyb but CN=3. I.e., these atoms should satisfy:
+        i) bonded to aromatic atom or
+        ii) in -N-C=O
+        """
+        if not hasattr(self, '_iasNsp2'):
+            ias = set()
+            #ts = is_subg(self.mol, '[#7;X3;A]~[a]', iop=1)[1]
+            #for tsi in ts:
+            #    ias.update( tsi[:1] )
+            patt = '[#7;X3]~[#6]=[#8]'
+            ts = is_subg(self.mol, patt, iop=1)[1]
+            for tsi in ts:
+                ias.update( tsi[:1] )
+            # N in -NO2 is sp2-hyb
+            for ia in self.ias[ np.logical_and(self.zs==7, self.cns==3) ]:
+                if self.bom[ia].sum() > 3:
+                    ias.update([ia])
+            # N-aromatic
+            ias.update( self.ias[ tools.reduce(np.logical_and, (self.aromatic, self.zs==7, self.cns==3)) ] )
+            self._iasNsp2 = ias
+        return self._iasNsp2
+
+
+    @property
     def iasN3(self):
         if not hasattr(self, '_iasN3'):
             self._iasN3 = self.get_iasN3()
@@ -1612,6 +1647,13 @@ class newmol(object):
             self._iconjs = self.get_iconjs()
         return self._iconjs
 
+    @property
+    def iconjsv(self):
+        """ is conjugated atomic env? """
+        if not hasattr(self, '_iconjsv'):
+            self._iconjsv = self.iconjs[self.iasv]
+        return self._iconjsv
+
     def get_iconjs(self):
         """
         iconj - integer indicating the types of conjugation
@@ -1641,15 +1683,10 @@ class newmol(object):
                 if self.cns[i] == co.cnsr[zi]:
                     # hyper-conj via lone electron pair (p electron) and Pi electron
                     iconjs[i] = 2
-            #else:
-            #    raise Exception('Todo: new elements encountered')
+
         # reset `iconj to 0 for N in env -C(=O)N
-        # The reason we put this section at the end rather than the begining
-        # is that atoms binding to >N- in >N-C(=O)- are also coplanar and should
-        # be assigned a `iconj value of 3. If the reset is done at the begining,
-        # then the `iconj of the two atoms (other than C) bonded to N would be left as 0.
-        for i in self.iasN3:
-            iconjs[i] = 2
+        #for i in self.iasN3:
+        #    iconjs[i] = 2
         return iconjs
 
     @property
@@ -1657,18 +1694,56 @@ class newmol(object):
         """ all ring atoms (up to 7 membered ring) """
         if not  hasattr(self, '_iasra'):
              ats = set()
-             for si in self.get_atsr():
+             for si in self.rings:
                  ats.update(si)
              self._iasra = ats
         return self._iasra
 
-    @property
-    def atsr(self):
-        if not  hasattr(self, '_atsr'):
-            self._atsr = self.get_atsr()
-        return self._atsr
 
-    def get_atsr(self, namin=3, namax=7, remove_redudant=T):
+    @property
+    def crings(self):
+        """ rings with atoms conjugated """
+        if not  hasattr(self, '_crings'):
+            crs = []
+            icjs = self.iconjs
+            for r0 in self.rings:
+                r = list(r0)
+                if np.all( np.logical_or(icjs[r]==1, icjs[r]==2) ):
+                    crs.append(r)
+            self._crings = crs
+        return self._crings
+
+    @property
+    def rings_v(self):
+        """ rings of amon, with all possible vdw bonds included """
+        if not  hasattr(self, '_ringsv'):
+            self._ringsv = self.mext.rings
+        return self._ringsv
+
+    @property
+    def crings_v(self):
+        """ rings with atoms conjugated in an amon, with all possible vdw bonds included.
+        Note that crings_v cannot be obtained by calling self.mext.crings, as the `iconjs
+        value has changed when assigning a BO=1 to vdw bond """
+        if not  hasattr(self, '_cringsv'):
+            crs = []
+            icjs = self.iconjs
+            for r0 in self.rings_v:
+                r = list(r0)
+                if np.all( np.logical_or(icjs[r]==1, icjs[r]==2) ):
+                    crs.append(r)
+            self._cringsv = crs
+        return self._cringsv
+
+
+    @property
+    def rings(self):
+        """ rings with atoms conjugated """
+        if not  hasattr(self, '_rings'):
+            self._rings = self.get_rings()
+        return self._rings
+
+    def get_rings(self, namin=3, namax=7, remove_redudant=T):
         """ get ring nodes for ring
         made up of `namin- to `namax atoms
 
@@ -1696,15 +1771,15 @@ class newmol(object):
             n = len(sets)
             sets_remove = []
             ijs = itl.combinations( list(range(n)), 2 )
-            sets_u = []
+            sets2 = []
             for i,j in ijs:
                 set_ij = sets[i].union( sets[j] )
                 if (set_ij in sets) and (set_ij not in sets_remove):
                     sets_remove.append( set_ij )
-            sets_u = cim.get_compl(sets, sets_remove)
+            sets2 = cim.get_compl(sets, sets_remove)
         else:
-            sets_u = sets
-        return sets_u
+            sets2 = sets
+        return sets2
 
     @staticmethod
     def is_part_of_smaller_ring(seti, sets):
@@ -1733,7 +1808,7 @@ class newmol(object):
         return self._atsr_strain
 
     def get_atsr_strain(self):
-        atsr = self.get_atsr(namin=3, namax=7, remove_redudant=T)
+        atsr = self.rings #get_(namin=3, namax=7, remove_redudant=T)
         atso = []
         for i, _atsi in enumerate(atsr):
             na = len(_atsi)
@@ -1800,7 +1875,8 @@ class newmol(object):
         atoms bonded by vdw interaction appended """
         if not hasattr(self, '_mext'):
             bomv = self.bom.copy()
-            for i,h,j in self.iasdha:
+            #for i,h,j in self.iasdha:
+            for i,j in self.hbsv_ext:
                 bomv[i,j] = bomv[j,i] = 1
             _mext = newmol(self.zs, self.chgs, bomv, self.coords)
             self._mext = _mext
@@ -2296,15 +2372,118 @@ class newmol(object):
         if not hasattr(self, '_chbs'):
             _chbs = []
             for i,h,j in self.iasdha:
-                b = [i,j]; hb = [h,j]
-                hb.sort()
-                ias_mext = self.mext.iasr6
-                icjs_mext = self.iconjs[ias_mext] ## note that the self.mext.iconjs != self.iconjs
-                ats_cr6 = ias_mext[ np.logical_or(icjs_mext==1, icjs_mext==2) ]
-                if set(b) < set(ats_cr6):
-                    _chbs.append(hb)
+                b = [i,j]; hb = [h,j]; hb.sort()
+                for cr in self.crings_v:
+                    if set(b) < set(cr):
+                        _chbs.append(hb)
+                        break
+                #ias_mext = self.mext.iasr56
+                #icjs_mext = self.iconjs[ias_mext] ## note that the self.mext.iconjs != self.iconjs
+                #ats_cr56 = ias_mext[np.logical_or(icjs_mext==1, icjs_mext==2) ]
+                #if set(b) < set(ats_cr56):
+                #    _chbs.append(hb)
             self._chbs = _chbs
         return self._chbs
+
+
+
+    @property
+    def hbs_ext(self):
+        """
+        extended HB bonds (including all possible non-covalent
+        H...X bonds that are in co-planar and conjugated envs,
+        e.g., hydrogen bonds in GC and AT base pairs.
+        Apparently, chbs \in chbs_ext
+        """
+        if not hasattr(self, '_hbs2'):
+            _hbs = []
+            for b in self.ncbs:
+                if (self.zs[b]==1).sum()==1:
+                    _hbs.append(b)
+            self._hbs2 = _hbs
+        return self._hbs2
+
+
+    @property
+    def hbsv_ext(self):
+        """
+        extended HB bonds (associated heavy atoms only)
+        """
+        if not hasattr(self, '_hbsv2'):
+            _hbs = []
+            idx = np.array([0,1], dtype=int)
+            for b in self.hbs_ext:
+                zi, zj = self.zs[b]
+                if zi==1:
+                    ia0 = b[0]; ib = b[1]
+                else:
+                    ia0 = b[1]; ib = b[0]
+                ia = self.ias[self.g[ia0]>0][0]
+                hb = [ia,ib]; hb.sort()
+                _hbs.append(hb)
+            self._hbsv2 = _hbs
+        return self._hbsv2
+
+
+    @property
+    def hmap(self):
+        if not hasattr(self, '_hmap'):
+            _hmap =  {}
+            for ia in self.ias:
+                if self.zs[ia] > 1:
+                    _hmap[ia] = ia
+                else:
+                    nbrs = self.ias[self.g[ia]==1]
+                    assert len(nbrs)==1
+                    _hmap[ia] = nbrs[0]
+            self._hmap = _hmap
+        return self._hmap
+
+
+    @property
+    def iasvv(self):
+        if not hasattr(self, '_iasvv'):
+            _ias = set()
+            for b in self.ncbs:
+                _ias.update( [ self.hmap[ia] for ia in b ] )
+            self._iasvv = _ias
+        return self._iasvv
+
+    @property
+    def iasvv_inter(self):
+        if not hasattr(self, '_iasvv2'):
+            _ias = set()
+            for b in self.ncbs_inter:
+                _ias.update( [ self.hmap[ia] for ia in b ] )
+            self._iasvv2 = list(_ias)
+        return self._iasvv2
+
+
+
+    @property
+    def chbs_ext(self):
+        """
+        extended HB bonds (including all possible non-covalent
+        H...X bonds that are in co-planar and conjugated envs,
+        e.g., hydrogen bonds in GC and AT base pairs.
+        Apparently, chbs \in chbs_ext
+        """
+        if not hasattr(self, '_chbs2'):
+            _chbs = []
+            for b in self.hbs_ext:
+                #ias_mext = self.mext.iasr56
+                #icjs_mext = self.iconjs[ias_mext] ## note that the self.mext.iconjs != self.iconjs
+                #ats_cr56 = ias_mext[ np.logical_or(icjs_mext==1, icjs_mext==2) ]
+                #print('b=',b, 'ats_cr56=',ats_cr56)
+                bv = [ self.hmap[ja] for ja in b ]
+                for cr in self.crings_v:
+                    if set(bv) < set(cr):
+                        _chbs.append(b)
+                        break
+                #if set(bv) < set(ats_cr56):
+                #    _chbs.append(b)
+            self._chbs2 = _chbs
+        return self._chbs2
 
 
     def get_is_dha_valid(self, pair, ang):
@@ -2496,28 +2675,60 @@ class newmol(object):
             if np.all(ds[i,j]<=ds[i,nbrsj]) and np.all(ds[j,i]<=ds[j,nbrsi]):
                 ncbs2.append(b)
 
-        #    _seta.update(b)
-        #ats = np.array(list(_seta), dtype=int)
-        #buff = []
-        #filt = (self.cns[ats]==1)
-        #for j in ats: #[filt]:
-        #    tfs = ( gv[j]>0 )
-        #    if tfs.sum() >= 2: #np.any(tfs):
-        #        dsj = ds[j][tfs]
-        #        jas = ias[tfs]
-        #        jnb = jas[dsj==np.min(dsj)][0]
-        #        #bj = set([j,jnb])
-        #        #if bj not in buff:
-        #        #    buff.append(bj)
-        #        #    pair = [j,jnb]; pair.sort()
-        #        ks = np.setdiff1d(jas,[jnb])
-        #        for k in ks:
-        #            br = [j,k]; br.sort()
-        #            if br in ncbs:
-        #                if self.debug:
-        #                    print('      vdw bond to be removed: ',br)
-        #                if np.any(self.zs[br]==1):
-        #                    ncbs.remove(br)
+        Todo = """_ncbs2 = []
+        b2a_h = {}
+        _ats_h = set()
+        # criteria used to determine if an atom pair (i,j) is a vdw bond:
+        # d(i,j) <= d(i,l) & d(j,i)<=d(j,k) for any l \in cov neighbors of j,
+        # k \in neighbors of i
+        for b in ncbs:
+            i, j = b
+            zsb = self.zs[b]
+            fli = np.logical_and(pls[i]>0, pls[i]<=2)
+            flj = np.logical_and(pls[j]>0, pls[j]<=2) # pl must >0!!
+            nbrsi = ias[fli]
+            nbrsj = ias[flj]
+            if np.all(ds[i,j]<=ds[i,nbrsj]) and np.all(ds[j,i]<=ds[j,nbrsi]):
+                _ats_h.update( np.array(b,dtype=int)[zsb==1] )
+                _ncbs2.append(b)
+                for iz in range(2):
+                    ia = b[iz]; ib = b[1-iz]
+                    za = self.zs[ia]
+                    if za == 1:
+                        if ia in b2a_h:
+                            b2a_h[ia].update( [ib] )
+                        else:
+                            b2a_h[ia] = set([ib])
+        # further ensure that each H can form at most 1 HB
+        ats_h = np.array(list(_ats_h), dtype=int)
+        bs_remove = []
+        ncbs2 = []
+        for ia in ats_h:
+            if ia in b2a_h:
+                nbrs_v = list(b2a_h[ia])
+                #print('ia=',ia, 'nbrs_vdw=',nbrs_v)
+                if len(nbrs_v)==1:
+                    seti = [ia,nbrs_v[0]]; seti.sort()
+                    #print('seti=', seti)
+                    if seti not in ncbs2:
+                        ncbs2.append( seti )
+                else:
+                    dsi = self.ds[ia, nbrs_v]
+                    seq = np.argsort(dsi)
+                    inbr = nbrs_v[seq[0]]
+                    for ir in seq[1:]:
+                        bvi = [ia,nbrs_v[ir]]; bvi.sort()
+                        if bvi not in bs_remove:
+                            bs_remove.append(bvi)
+                    seti = [ia,inbr]; seti.sort()
+                    if seti not in ncbs2:
+                        ncbs2.append(seti)
+        _ncbs2 = []
+        for bvi in ncbs2:
+            if bvi not in bs_remove:
+                _ncbs2.append(bvi)
+        ncbs2 = _ncbs2.copy() """
+
         return ncbs2
 
 
@@ -2551,7 +2762,7 @@ class newmol(object):
             for b in self.ncbs:
                 i,j = list(b)
                 if self.pls[i,j] == 0:
-                    ncbs2.append(b1)
+                    ncbs2.append(b)
             self._ncbs2 = ncbs2
         return self._ncbs2
 

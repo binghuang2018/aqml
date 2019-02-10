@@ -10,6 +10,46 @@ import cheminfo.graph as cg
 import cheminfo.oechem.core as coc
 import scipy.spatial.distance as ssd
 
+T, F = True, False
+
+class setset(object):
+
+    def __init__(self, sets):
+        self.sets = sets
+
+    def get_idx(self, seti):                                     
+        idx = None
+        for j, setj in enumerate(self.sets):
+            if seti <= setj: 
+                idx = j
+                break
+        return idx
+    
+    def update(self, seti, nested=T):
+        """ 
+        append a new set `seti` if it is not a subset of any
+        set in `sets`
+        """
+        sets = self.sets.copy()
+        if len(sets) == 0:
+            sets.append( seti )
+        else:
+            if not np.any( [ seti <= setj for setj in sets ] ):
+                intersected = [ seti.intersection(set_j) for set_j in sets ]
+                istats = np.array([ si != set() for si in intersected ])
+                nset = len(sets)
+                idxs = np.arange( nset )
+                if np.any(istats):
+                    #assert istats.astype(np.int).sum() == 1
+                    for iset in idxs:
+                        if istats[iset]:
+                            sets[iset] = seti.union( sets[iset] )
+                else:
+                    sets.append( seti )
+        self.sets = sets
+
+
+
 class ParentMol(coo.StringM):
 
     def __init__(self, string, debug=False, nprocs=24):
@@ -48,18 +88,16 @@ class ParentMol(coo.StringM):
         in, say Naphthalene. This is exactly what we demand!
         """
 
-        sets = []
+        sets = setset([])
 
         # first search for rings
-        sets_r = self.get_atsr(namin=3, namax=7)
-        sets += sets_r
+        for set_r in self.rings: #(namin=3, namax=7):
+            sets.update(set_r)
 
         for patt in ['[CX3;!a](=O)[#7;!a]', '[^2;!a]~[a]', '[^2;X1]=[*]' ]:
             _, ssi, _ = coc.is_subg(self.mol, patt, iop=1)
-            for i,_si in enumerate(ssi):
-                si = set(_si)
-                if si not in sets:
-                    sets = update_sets(si, sets)
+            for si in ssi:
+                sets.update(set(si))
 
 # first retain the BO's for bonds involving any multi-valent atom, i.e.,
 # atom with dvi>1. Here are a few examples that are frequently encountered:
@@ -75,15 +113,15 @@ class ParentMol(coo.StringM):
                     if dvs[ja] > 0:
                         atsi.update([ja])
                 if atsi not in sets:
-                    sets.append(atsi)
+                    sets.update(atsi)
 
         for b in self.b2a:
             i, j = [ self.iasv[_] for _ in b ]
             if self.bom[i,j] > 1:
                 si = set([i,j])
-                sets = update_sets(si, sets)
+                sets.update(si)
 
-        return sets
+        return sets.sets
 
 
 
@@ -104,7 +142,7 @@ class ParentMol(coo.StringM):
         return self._a2gr
 
 
-    def get_atoms_within_cutoff(self, rcut, iasq=None, zsq=None):
+    def get_atoms_within_cutoff(self, rcut, k=999, iasq=None, zsq=None):
         """
         For now, for prediction of NMR only
 
@@ -116,17 +154,20 @@ class ParentMol(coo.StringM):
         The related properties include NMR shifts.
         """
 
-        assert not np.all([obj is None for obj in [iasq,zsq]])
+        if np.all([obj is None for obj in [iasq,zsq]]):
+            iasq = list(self.ias)
+            print('    each of the atoms in q is to be processed')
+        else:
+            if zsq is not None:
+                iasq = []
+                for zq in zsq:
+                    iasq += list(self.ias[self.zs == zq])
+            print('  iasq=',iasq, 'zsq=',zsq)
 
-        if zsq is not None:
-            iasq = []
-            for zq in zsq:
-                iasq += list(self.ias[self.zs == zq])
-
-        iasq = np.array(iasq)
-
+        iasq.sort()
+        iasq = np.array(iasq, dtype=int)
         naq = len(iasq)
-        print('  iasq=',iasq, 'zsq=',zsq)
+
         print('  There are %d matched atoms'%naq)
 
         iasvq = iasq[self.zs[iasq]>1]
@@ -189,6 +230,10 @@ class ParentMol(coo.StringM):
                     break
                 loop += 1
 
+            if len(seti) > k:
+                print('    skip this submol as nav>k')
+                continue
+            
             atsv = list(seti)
             jasv = np.array(atsv, dtype=int)
             if seti not in sets:
@@ -222,33 +267,6 @@ class ParentMol(coo.StringM):
         return ms, np.array(maps, dtype=int)
 
 
-def get_set_idx(seti, sets):
-
-    idx = None
-    for j, setj in enumerate(sets):
-        if seti <= setj: 
-            idx = j
-            break
-    return idx, sets
-
-
-
-def update_sets(seti, sets):
-
-    if np.any( [ seti <= setj for setj in sets ] ):
-        return sets
-    intersected = [ seti.intersection(set_j) for set_j in sets ]
-    istats = np.array([ si != set() for si in intersected ])
-    nset = len(sets)
-    idxs = np.arange( nset )
-    if np.any( istats ):
-        #assert istats.astype(np.int).sum() == 1
-        for iset in idxs:
-            if istats[iset]:
-                sets[iset] = seti.union( sets[iset] )
-    else:
-        sets.append( seti )
-    return sets
 
 
 
@@ -257,26 +275,41 @@ if __name__ == "__main__":
     import sys
     import argparse  as ap
 
-    print(' -- now excuting %s'%( ' '.join(sys.argv[:]) ) )
+
 
     ps = ap.ArgumentParser()
+    ps.add_argument('-a','-all', dest='all', action='store_true', help='all atoms in target mol are to be inquired to retrieve local env')
+    #ps.add_argument('-ga', action='store_true', help='generate amons')
     ps.add_argument('-debug', action='store_true')
+    ps.add_argument('-f', '-file', '-lb','-label', dest='lb', default='amons', type=str, help='generate amons')
+    ps.add_argument('-k', nargs='?', type=int, help='maximal num of heavy atoms allowed (N_I) in an amon')
     ps.add_argument('-rcut', nargs='?', default=6.0, type=float)
     ps.add_argument('-q', '-query', dest='q', nargs='?', type=str, help='query mol(s) as sdf/pdb file(s)')
 
     ag = ps.parse_args() # sys.argv[1:]
 
+    print(' -- now excuting %s'%( ' '.join(sys.argv[:]) ) )
+
     print('q={}, rcut={}'.format(ag.q, ag.rcut))
     obj = ParentMol(ag.q, debug=ag.debug)
     ms = []
-    zsq = [1, 6, 7]
-    ms, maps = obj.get_atoms_within_cutoff(zsq=zsq, rcut=ag.rcut)
+    iasq = None; zsq = [1, 6, 7]
+    if ag.all:
+        zsq = None
+    else:
+        print(' ++ zsq to be inquired: ', zsq)
 
-    fd = 'amons_r%.1f/'%ag.rcut
+    k = 999
+    if ag.k:
+        k = ag.k
+
+    ms, maps = obj.get_atoms_within_cutoff(ag.rcut, k=k, iasq=iasq, zsq=zsq)
+
+    fd = '%s-rc%.1f/'%(ag.lb, ag.rcut)
     if not os.path.exists(fd):
         os.mkdir(fd)
-    fmap = '%s/maps.npz'%fd
-    np.savez(fmap, maps=maps)
+    fmap = '%s/maps.txt'%fd
+    np.savetxt(fmap, maps, fmt='%d')
     print('map file saved to ', fmap)
 
     nm = len(ms)

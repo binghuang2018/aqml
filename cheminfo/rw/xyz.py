@@ -46,7 +46,7 @@ def read_xyz_simple(f, opt='z', icol=None, property_names=None, idx=None):
             props[p] = _props[p]
 
     _ats = []; coords = []; nheav = 0
-    chgs = []; nmr = []; grads = []
+    chgs = []; nmr = []; grads = []; cls = []
     for i in range(2,na+2):
         #print cs[i]
         csi = cs[i].strip().split()
@@ -54,9 +54,18 @@ def read_xyz_simple(f, opt='z', icol=None, property_names=None, idx=None):
         csia = csi[4:]
         if len(csia)>0:
             if 'chgs' in props:
-                chgs.append( eval(csia[props['chgs']]) )
+                #chgs.append( eval(csia[props['chgs']]) )
+                syi = csia[props['chgs']]
+                yi = np.nan if syi.lower() == 'nan' else eval(syi)
+                chgs.append(yi)
             if 'nmr' in props:
-                nmr.append( eval(csia[props['nmr']]) )
+                syi = csia[props['nmr']]
+                yi = np.nan if syi.lower() == 'nan' else eval(syi)
+                nmr.append(yi)
+            if 'cls' in props:
+                syi = csia[props['cls']]
+                yi = np.nan if syi.lower() == 'nan' else eval(syi)
+                cls.append(yi)
             if 'grads' in props:
                 grads.append( [ eval(csia[props['grads']+j]) for j in range(3) ] )
         try:
@@ -74,6 +83,8 @@ def read_xyz_simple(f, opt='z', icol=None, property_names=None, idx=None):
         props['nmr'] = np.array(nmr)
     if len(grads) > 0:
         props['grads'] = np.array(grads)
+    if len(cls) > 0:
+        props['cls'] = np.array(cls)
     return [na], _ats, coords, [nheav], props
 
 

@@ -13,6 +13,9 @@ cc2cbsv23z : CCSD(T)/vdz, ccsd(t)/vtz --> ccsd(t)/cbs
 
 """
 
+
+__all__ = [ 'dct' ]
+
 T, F = True, False
 
 #def update_dct(adic, dct):
@@ -200,18 +203,17 @@ adic.update(dct1_0)
 
 # orca: default setting on Grids
 dct1_1 = {'orca':{
- 'H': {'b3lypdef2tzvp': -0.498764220938, 'wb97xdef2tzvp': -0.501393616509},
- 'C': {'b3lypdef2tzvp': -37.838155285315, 'wb97xdef2tzvp': -37.846231183856},
- 'N': {'b3lypdef2tzvp': -54.579011674931, 'wb97xdef2tzvp': -54.591755729681},
- 'O': {'b3lypdef2tzvp': -75.066885837081, 'wb97xdef2tzvp': -75.076743757959},
- 'F': {'b3lypdef2tzvp': -99.736302688584, 'wb97xdef2tzvp': -99.747331673869},
- 'P': {'b3lypdef2tzvp': -341.223918586333, 'wb97xdef2tzvp': -341.25262407453},
- 'S': {'b3lypdef2tzvp': -398.071502872284, 'wb97xdef2tzvp': -398.107732865939},
- 'Cl': {'b3lypdef2tzvp': -460.101732814945, 'wb97xdef2tzvp': -460.146375877741},
- 'Br': {'b3lypdef2tzvp': -2574.001667573669, 'wb97xdef2tzvp': -2574.1387121629},
+ 'H':  {'b3lypdef2tzvp':    -0.498764220938, 'wb97xdef2tzvp':    -0.5013936165, 'b3lypvdz':    -0.497858961664 },
+ 'C':  {'b3lypdef2tzvp':   -37.838155285315, 'wb97xdef2tzvp':   -37.8462311839, 'b3lypvdz':   -37.830625604890 },
+ 'N':  {'b3lypdef2tzvp':   -54.579011674931, 'wb97xdef2tzvp':   -54.5917557297, 'b3lypvdz':   -54.564148277678 },
+ 'O':  {'b3lypdef2tzvp':   -75.066885837081, 'wb97xdef2tzvp':   -75.0767437580, 'b3lypvdz':   -75.039064184306 },
+ 'F':  {'b3lypdef2tzvp':   -99.736302688584, 'wb97xdef2tzvp':   -99.7473316739, 'b3lypvdz':   -99.692719367701 },
+ 'P':  {'b3lypdef2tzvp':  -341.223918586333, 'wb97xdef2tzvp':  -341.2526240745, 'b3lypvdz':  -341.219653131160 },
+ 'S':  {'b3lypdef2tzvp':  -398.071502872284, 'wb97xdef2tzvp':  -398.1077328659, 'b3lypvdz':  -398.064059743834 },
+ 'Cl': {'b3lypdef2tzvp':  -460.101732814945, 'wb97xdef2tzvp':  -460.1463758777, 'b3lypvdz':  -460.093205551910 },
+ 'Br': {'b3lypdef2tzvp': -2574.001667573669, 'wb97xdef2tzvp': -2574.1387121629, 'b3lypvdz': -2573.973745608256 },
 }}
 adic.update(dct1_1)
-
 
 
 # pyscf
@@ -411,6 +413,20 @@ dct5 = {'qmcpack': {
 }}
 adic.update(dct5)
 
+
+# vasp
+dct6 = { 'vasp': {
+               'Au': { 'pbe340':  -0.010520446100894889, },
+               'B': { 'pbe340':  -0.017147397033806556, },
+               'C': { 'pbe340':  -0.05037741476205737, },
+               'H': { 'pbe340':  -0.040931995856535945, },
+               'N': { 'pbe340':  -0.11367257027003742, },
+               'O': { 'pbe340':  -0.06871296038818657, },
+               'Pt': { 'pbe340':  -0.031996226109921054, },
+               'Si': { 'pbe340':  -0.032019611908771214},
+                },
+}
+adic.update(dct6)
 
 adic.update_ecbs()
 dct = adic.dct

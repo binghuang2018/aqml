@@ -204,8 +204,8 @@ class GR(object): #co.atoms):
                 ifd = T
                 break
 
-        meths_i = ['mp2', 'ccsd(t)', 'ccsd', 'qcisd(t)', 'qcisd']
-        meths_o = ['mp2', 'cc2',   'cc',     'qci2',   'qci']
+        meths_i = ['mp2', 'ccsd(t)', 'ccsd', 'qcisd(t)', 'qcisd', 'hf']
+        meths_o = ['mp2', 'cc2',   'cc',     'qci2',   'qci', 'hf']
         dct = dict(zip(meths_i, meths_o))
         for meth in meths_i:
             #ot = cmdout2('grep -i "%s" %s'%(meth, self.f))
@@ -343,6 +343,9 @@ class GR(object): #co.atoms):
             ss = cmdout2(cmd)
         elif self.meth in ['mp2']:
             cmd = "grep 'EUMP2 = ' %s | awk '{print $NF}'"%f
+            ss = cmdout2(cmd)
+        elif self.meth in ['hf']:
+            cmd = "grep 'E([RU]HF) = ' %s | awk '{print $5}'"%f
             ss = cmdout2(cmd)
         else:
             print(' meth="%s"'%self.meth)

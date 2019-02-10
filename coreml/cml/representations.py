@@ -310,7 +310,7 @@ def generate_bob(nuclear_charges, coordinates, atomtypes, size=23, asize = {"O":
 
     return fgenerate_bob(nuclear_charges, coordinates, nuclear_charges, ids, nmax, n)
 
-def get_slatm_mbtypes(nuclear_charges, pbc='000'):
+def get_slatm_mbtypes(nuclear_charges, pbc=False):
     """
     Get the list of minimal types of many-body terms in a dataset. This resulting list
     is necessary as input in the ``generate_slatm_representation()`` function.
@@ -340,16 +340,15 @@ def get_slatm_mbtypes(nuclear_charges, pbc='000'):
         zsi = np.array(zs[i],np.int)
         nass.append( [ (zi == zsi).sum() for zi in zsmax ] )
 
-    nzmax = np.max(np.array(nass), axis=0)
-    nzmax_u = []
-    if pbc != '000':
+    _nzmax = np.max(np.array(nass), axis=0)
+    nzmax = _nzmax.copy()
+    nzu = len(nzmax)
+    if pbc:
         # the PBC will introduce new many-body terms, so set
         # nzmax to 3 if it's less than 3
-        for nzi in nzmax:
-            if nzi <= 2:
-                nzi = 3
-            nzmax_u.append(nzi)
-        nzmax = nzmax_u
+        for i in range(nzu):
+            if nzmax[i] <= 2:
+                nzmax[i] = 3
 
     boas = [ [zi,] for zi in zsmax ]
     bops = [ [zi,zi] for zi in zsmax ] + list( itl.combinations(zsmax,2) )
@@ -370,8 +369,8 @@ def get_slatm_mbtypes(nuclear_charges, pbc='000'):
 
 
 def generate_slatm(coordinates, nuclear_charges, mbtypes, cg=None, izeff=False,
-        unit_cell=None, local=False, sigmas=[0.05,0.05], dgrids=[0.03,0.03],
-        rcut=4.8, alchemy=False, pbc='000', rpower=6):
+        cell=None, local=False, sigmas=[0.05,0.05], dgrids=[0.03,0.03],
+        rcut=4.8, alchemy=False, pbc=False, rpower=6, ias=None):
     """
     Generate Spectrum of London and Axillrod-Teller-Muto potential (SLATM) representation.
     Both global (``local=False``) and local (``local=True``) SLATM are available.
@@ -404,36 +403,31 @@ def generate_slatm(coordinates, nuclear_charges, mbtypes, cg=None, izeff=False,
     :rtype: numpy array
     """
 
-    c = unit_cell
     iprt=False
-    if c is None:
-        c = np.array([[1,0,0],[0,1,0],[0,0,1]])
 
-    if pbc != '000':
-        # print(' -- handling systems with periodic boundary condition')
-        assert c != None, 'ERROR: Please specify unit cell for SLATM'
-        # =======================================================================
-        # PBC may introduce new many-body terms, so at the stage of get statistics
-        # info from db, we've already considered this point by letting maximal number
-        # of nuclear charges being 3.
-        # =======================================================================
+    #if pbc != '000':
+    #    print(' -- handling systems with periodic boundary condition')
+    #    assert c != None, 'ERROR: Please specify unit cell for SLATM'
 
     zs = nuclear_charges
     na = len(zs)
     coords = coordinates
-    obj = [ zs, coords, c ]
+    obj = [ zs, coords, cell ]
 
     iloc = local
 
     if iloc:
         mbs = []
         X2Ns = []
-        for ia in range(na):
-            # if iprt: print '               -- ia = ', ia + 1
+        if ias is None:
+            ias = np.arange(na)
+        for ia in ias:
+            #print('ia = ', ia + 1)
             n1 = 0; n2 = 0; n3 = 0
             mbs_ia = np.zeros(0)
             icount = 0
             for mbtype in mbtypes:
+                #print('  mbtype=', mbtype)
                 if len(mbtype) == 1:
                     mbsi = get_boa(mbtype[0], np.array([zs[ia],]))
                     #print ' -- mbsi = ', mbsi

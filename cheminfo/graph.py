@@ -131,6 +131,7 @@ class Graph(object):
         for i,j in itl.combinations(ias,2):
             ipts.append([gx,i,j])
         _ts = []
+        #print('g=', self.g)
         if self.nprocs > 1:
             print(' now parallelly computing path lengths...')
             pool = multiprocessing.Pool(processes=self.nprocs)

@@ -1,0 +1,242 @@
+
+import os, sys
+import numpy as np
+import cheminfo.molecule.geometry as cmg
+
+T,F = True,False
+
+def get_mbtypes(zs):
+    """
+    get many-body types
+    """
+    # atoms that cannot be J in angle IJK or J/K in dihedral angle IJKL
+    zs1 = [1,9,17,35,53]
+
+    zs.sort()
+    nz = len(zs)
+
+    # 2-body
+    mbs2 = []
+    mbs2 += [ '%d-%d'%(zi,zi) for zi in zs ]
+    for i in range(nz):
+        for j in range(i+1,nz):
+            mbs2.append( '%d-%d'%(zs[i],zs[j]) )
+
+    # 3-body
+    mbs3 = []
+    zs2 = list( set(zs).difference( set(zs1) ) )
+    zs2.sort()
+    nz2 = len(zs2)
+    for j in range(nz2):
+        for i in range(nz):
+            for k in range(i,nz):
+                type3 = '%d-%d-%d'%(zs[i],zs2[j],zs[k])
+                if type3 not in mbs3: mbs3.append( type3 )
+
+    # 4-body
+    mbs4 = []
+    for j in range(nz2):
+        for k in range(j,nz2):
+            for i in range(nz):
+                for l in range(nz):
+                    zj,zk = zs2[j],zs2[k]
+                    zi,zl = zs[i],zs[l]
+                    if j == k:
+                        zi,zl = min(zs[i],zs[l]), max(zs[i],zs[l])
+                    type4 = '%d-%d-%d-%d'%(zi,zj,zk,zl)
+                    if type4 not in mbs4: mbs4.append( type4 )
+    return [mbs2,mbs3,mbs4]
+
+
+class NBody(object):
+    """
+    get many body terms
+    """
+
+    def __init__(self, zs, coords, g, nbody=4, rcut=0.0, unit='rad', \
+                 icn=F, iheav=F):
+
+        self.na = len(zs)
+        self.zs = np.array(zs, np.int)
+        self.coords = np.array(coords)
+        self.rcut = rcut
+        self.unit = unit
+        self.iheav = iheav
+        self.icn = icn
+        ias = np.arange(self.na)
+        self.ias = ias
+        ias_heav = ias[ self.zs > 1 ]
+        self.ias_heav = ias_heav
+        g_heav = g[ias_heav][:,ias_heav]
+        self.nb_heav = (g_heav > 0).sum()/2
+        iasr1, iasr2 = np.where( np.triu(g_heav) > 0 )
+        self.iasb = np.array([ias_heav[iasr1],ias_heav[iasr2]],np.int).T
+        self.mbs2, self.mbs3, self.mbs4 = {}, {}, {}
+        self.g = g
+        self.cns = g.sum(axis=0)
+        self.geom = cmg.Geometry(coords)
+        self.vars2, self.vars3, self.vars4 = [], [], []
+
+    def get_bonds(self):
+        """
+        the atomic pair contrib
+
+        vars
+        ====================
+        conn: should the pair of atoms be connected?
+        """
+        iok = True; vars2 = []
+        ds = self.geom.ds
+        for ia in range(self.na):
+            for ja in range(ia+1,self.na):
+                zi, zj = self.zs[ [ia,ja] ]
+                cni,cnj = self.cns[ [ia,ja] ]
+                if self.iheav and (zi==1 or zj==1): continue
+                dij = ds[ia,ja]
+                if self.rcut == 0.0:
+                    if not self.g[ia,ja]:
+                        iok = False
+                else:
+                    if dij > self.rcut:
+                        iok = False
+                if iok:
+                    if (zi>zj) or (self.icn and zi==zj and cni>cnj):
+                        _ia,_ja =  [ja,ia]; ia,ja = _ia,_ja
+                    zi,zj = self.zs[ [ia,ja] ]
+                    cni,cnj = self.cns[ [ia,ja] ]
+                    type2 = '%d_%d-%d_%d'%(zi,cni,zj,cnj) if icn else '%d-%d'%(zi,zj)
+                    if type2 in self.mbs2.keys():
+                        self.mbs2[type2] += [dij]
+                    else:
+                        self.mbs2[type2] = [dij]
+                    vars2.append( dij )
+        self.vars2 = np.array(vars2)
+
+    def get_neighbors(self,ia):
+        return self.ias[ self.g[ia] > 0 ]
+
+    def get_angles(self, jas=[]):
+        """
+        3-body parts: angles spanned by 3 adjacent atoms,
+                      must be a valid angle in forcefield
+        """
+        vars3 = []
+        if len(jas) == 0:
+            jas = self.ias_heav # allows for user-specified central atoms
+        for j in jas:
+            zj = self.zs[j]
+            neibs = self.get_neighbors(j)
+            nneib = len(neibs)
+            if nneib > 1:
+                for i0 in range(nneib):
+                    for k0 in range(i0+1,nneib):
+                        i, k = neibs[i0], neibs[k0]
+                        ias = [i,j,k]
+                        zi,zj,zk = self.zs[ias]
+                        cni,cnj,cnk = self.cns[ias]
+                        if self.iheav and np.any(self.zs[ias]==1): continue
+                        if (zi>zk) or (self.icn and zi==zk and cni>cnk): ias = [k,j,i]
+                        zsi = [ self.zs[ia] for ia in ias ]
+                        if self.icn:
+                            tt = [ '%d_%d'%(self.zs[_],self.cns[_]) for _ in ias ]
+                        else:
+                            tt = [ '%d'%self.zs[_] for _ in ias ]
+                        type3 = '-'.join(tt)
+                        theta = self.geom.get_angle(ias) # in degree
+                        if self.unit in ['rad']:
+                            theta = theta * np.pi/180.
+                        if type3 in self.mbs3.keys():
+                            self.mbs3[type3] += [theta]
+                        else:
+                            self.mbs3[type3] = [theta]
+                        vars3.append( theta )
+        self.vars3 = np.array(vars3)
+
+    def is_rotatable(self, zs, cns):
+        """ check if a bond is rotatable """
+        na = len(zs)
+        assert na==2
+        iok = T
+        for ia in range(na):
+            z = zs[ia]; cn = cns[ia]
+            if cn == 1:
+                iok = F
+                break
+            else:
+                if z==6 and cn==2:
+                    iok = F
+                    break
+        return iok
+
+    def get_dihedral_angles(self):
+        """
+        4-body parts: dihedral angles
+        """
+        vars4 = []
+        for ib in range(self.nb_heav):
+            j,k = self.iasb[ib]
+            zsjk = self.zs[ [j,k] ]; zj,zk = zsjk
+            cnsjk = self.cns[ [j,k] ]; cnj,cnk = cnsjk
+            #
+            if not self.is_rotatable(zsjk,cnsjk): continue
+            #
+            if (zj>zk) or (self.icn and zj==zk and cnj>cnk):
+                t=k; k=j; j=t
+            neibs1 = self.get_neighbors(j); n1 = len(neibs1);
+            neibs2 = self.get_neighbors(k); n2 = len(neibs2);
+            visited = []
+            for i0 in range(n1):
+                for l0 in range(n2):
+                    i = neibs1[i0]; l = neibs2[l0]
+                    pil = set([i,l])  # pair_i_l
+                    if pil not in visited:
+                        visited.append(pil)
+                    else:
+                        continue
+                    ias = [i,j,k,l]
+                    zi,zj,zk,zl = self.zs[ias]
+                    cni,cnj,cnk,cnl = self.cns[ias]
+                    if len(set(ias)) == 4: # in case of 3 membered ring
+                        if self.iheav and np.any(self.zs[ias]==1): continue
+                        if self.icn:
+                            if zj==zk and cnj==cnk:
+                                if zi>zl or (zi==zl and cni>cnl):
+                                    ias = [l,k,j,i]
+                        else:
+                            if zj==zk and zi>zl:
+                                ias = [l,k,j,i]
+                        zsi = [ self.zs[ia] for ia in ias ]
+                        if self.icn:
+                            tt = [ '%d_%d'%(self.zs[i],self.cns[i]) for i in ias ]
+                        else:
+                            tt = [ '%d'%(self.zs[i]) for i in ias ]
+                        type4 = '-'.join(tt)
+                        _tor = self.geom.get_dihedral_angle(ias)
+                        maxa = 180.
+                        maxa2 = 360.
+                        if self.unit in ['rad']:
+                            _tor = _tor * np.pi/180.
+                            maxa = np.pi
+                            maxa2 = np.pi * 2.
+                        if _tor > maxa:
+                            tor = maxa2 - _tor
+                        elif _tor < -maxa:
+                            tor = maxa2 + _tor
+                        else:
+                            tor = np.abs(_tor)
+                        #print ' ++ ', type4, ias, [cni,cnj,cnk,cnl], tor
+                        if type4 in self.mbs4.keys():
+                            self.mbs4[type4] += [tor]
+                        else:
+                            self.mbs4[type4] = [tor]
+                        vars4.append(tor)
+        self.vars4 = np.array(vars4)
+
+    def get_all(self, nbody=4):
+        self.get_bonds()
+        if nbody == 3:
+            self.get_angles()
+        elif nbody == 4:
+            self.get_angles()
+            self.get_dihedral_angles()
+

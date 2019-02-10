@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 from itertools import chain, product
-from functools import reduce
 import os, sys, re, copy, ase, time
 import ase.data as ad
 import pickle as pkl
@@ -12,10 +11,11 @@ import networkx as nx
 import cheminfo.oechem.oechem as coo
 from cheminfo.molecule.subgraph import *
 import cheminfo.rdkit.core as cir
-import cheminfo.core as cc
+import cheminfo as co
 from cheminfo.rw.ctab import write_ctab
 from rdkit import Chem
 import scipy.spatial.distance as ssd
+import cheminfo.openbabel.obabel as cib
 import multiprocessing
 import cheminfo.core as cic
 import cheminfo.math as cim
@@ -24,7 +24,7 @@ import itertools as itl
 import tempfile as tpf
 import cheminfo.graph as cg
 from cheminfo.molecule.elements import Elements
-#import cml.famoneib as fa
+import cml.famoneib as fa
 import cheminfo.oechem.core as coc
 
 global dsHX
@@ -345,7 +345,6 @@ class Sets(object):
             #    print(' ** info: param.gopt switched to PM6-D3H4')
 # the default case, use openbabel to do constrained optimization
             if self.param.gopt.lower() in ['obff']:
-                import cheminfo.openbabel.obabel as cib
                 ob1 = cib.Mol( ctab, fmt='sdf' )
                 ob1.optg_c(iconstraint=3, ff="MMFF94", \
                            optimizer='cg', steps=[30,90], ic=True)
@@ -828,7 +827,7 @@ class ParentMol(coo.StringM):
 
 # for non-conjugated ring, use criteria above
                 if self.icrl2o: #6a4:
-                    for rN in self.atsr: #r6 in self.atsr6:
+                    for rN in self.rings:
                         #print('rN=', rN)
                         nar = len(rN)
                         atsi = list(rN)
@@ -986,7 +985,7 @@ class ParentMol(coo.StringM):
                     si = ''
                     for i,zi in enumerate(zsa):
                         x,y,z = coords[i]
-                        si += '%2s %12.6f %12.6f %12.6f\n'%(cc.chemical_symbols[zi], x,y,z)
+                        si += '%2s %12.6f %12.6f %12.6f\n'%(co.chemical_symbols[zi], x,y,z)
                     print(si)
                     raise Exception('#ERROR: mol to can failed')
 
@@ -1016,14 +1015,14 @@ class ParentMol(coo.StringM):
                 # check iconjs
                 ats_cr5_a = newm.ats_cr5
                 if nheav>7:
-                    if np.all( np.logical_and(newm.iconjs>0, newm.iconjs<=2) ):
+                    if np.all( np.logical_and(newm.iconjsv>0, newm.iconjsv<=2) ):
                         if len(ats_cr5_a) > 0:
                             ats_nr_a = np.setdiff1d(newm.iasv, ats_cr5_a) # non-ring atoms
                             if newm.gv[ats_cr5_a][:,ats_nr_a].sum()==1: #(newm.iconjs[ats_nr_a]!=1).sum() >= 1:
                                 print('    # N_I>7 & 5-ring, found only one -R group, skip!')
                                 continue
 
-                        if (newm.iconjs==2).sum()>2:
+                        if (newm.iconjsv==2).sum()>2:
                             print('   # N_I>7, found >2 atoms with iconj==2, skip!')
                             continue
 
@@ -1062,9 +1061,10 @@ class ParentMol(coo.StringM):
                         continue
                     na_meso = imeso_a.sum()
 
-                    if np.all(imesoq) and na_meso == 0:
-                        print('    # found C=c1ccccc1=C or structure alike, skip!' )
-                        continue
+                    if np.all(imesoq) and (na_meso==0):
+                        if can not in ['C=c1ccccc1=C']: ###### need for a final call to determine if this is necessary
+                            print('    # found C=c1ccccc1=C or structure alike, skip!' )
+                            continue
                         #print('    imeso_a = ', imeso_a, 'imesoq=', imesoq)
 
                     if na_meso > 0:
@@ -1238,17 +1238,16 @@ class Logger(object):
 
 class ParentMols(object):
 
-    def __init__(self, strings, reduce_namons, fixGeom=F, iat=None, wg=T, i3d=T, \
+    def __init__(self, strings, reduce_namons=F, fixGeom=F, iat=None, wg=T, i3d=T, \
                  iwa=T, k=7, iprt=T, submol=None, label=None, stereo=F, isotope=F, \
-                 iextl=T, substring=None, rcut=6.0, imap=T, k2=7, \
+                 iextl=F, substring=None, rcut=6.0, imap=T, k2=7, \
                  opr='.le.', M='cml1', iclean=T, \
                  scale_vdw=1.0, thresh=0.01, wsmi=T, keepHalogen=F, nprocs=1, \
                  forcefield='mmff94', gopt='rkff', ixtb=F, nocrowd=T, \
                  icc4Rsp3out=F, nogc=F, iasp2arout=T, \
-                 ioc=F, iocn=F, icrl2o=T, igchk=T, irddtout=F, \
-                 ivdw=F, ivao=F, nmaxcomb=2, reuseg=F, saveg=F, \
-                 irad=F, ichg=F, prefix='', iwarn=T, debug=F, log=T):
-#                 do_pm7=False, relaxHHV=False, \
+                 ioc=T, iocn=F, icrl2o=T, igchk=T, irddtout=F, \
+                 ivdw=F, ivao=F, nmaxcomb=3, reuseg=F, saveg=F, \
+                 irad=T, ichg=T, prefix='', iwarn=T, debug=F, log=T):
         """
         prefix -- a string added to the beginning of the name of a
                   folder, where all sdf files will be written to.
@@ -1353,12 +1352,6 @@ class ParentMols(object):
         self.io = Logger(fin)
 
 
-        # parameter resettings
-        #if ivdw:
-        #    fixGeom = T
-        #    print(' ** fixGeom reset to T for vdw amons\n')
-
-
         # use mmff94 only, as there are some unresolved issues with uff,
         # one typical example is that for some structure, uff in rdkit
         # tend to favor a structure with two H's overlapped!!
@@ -1399,6 +1392,7 @@ class ParentMols(object):
         seta = Sets(param)
         warning_shown = F
 
+        #### aaaa
         for ir in range(nmt):
             string = strings[ir]
             if iprt:
@@ -1452,7 +1446,7 @@ class ParentMols(object):
             cansi = []
             nasv = []
 
-            # we need all fragments, including those that are redundant
+            # At the start, we need all fragments, including those redundant ones
             # (i.e., there exist at least 2 configs that possess d(x1,x2)=0)
             # The redundency will be removed when merging molecules to obtain
             # valid vdw complexes
@@ -1534,7 +1528,7 @@ class ParentMols(object):
                     lms = lms_U; cansi = cansi_U
                     self.io.write(' -- nmi_U = ', len(lms))
                 else:
-                    self.io.write('| Now perceive vdw connectivity between standalone amons')
+                    print('| Now perceive vdw connectivity between standalone amons')
                     use_f90 = F #T # F
                     #print('ncbs=', [ list(_) for _ in ncbsU ])
                     #assert np.all(obj.zs[ncbsU[:]]>1), '#ERROR: only heavy atoms are allowed in `ncbs'
@@ -1552,17 +1546,19 @@ class ParentMols(object):
                     if not iqg:
                         if not use_f90:
                             icsa = list( itl.combinations(imsa,2) )
+
+                            ipts = []
+                            for p in icsa:
+                                mi = lms[p[0]]; mj = lms[p[1]]
+                                ipts.append( [nprocs, self.k2, obj, mi, mj] )
+
                             if nprocs > 1:
-                                ipts = []
-                                for p in icsa:
-                                    mi = lms[p[0]]; mj = lms[p[1]]
-                                    ipts.append( [nprocs, self.k2, obj, mi, mj] )
                                 pool = multiprocessing.Pool(processes=nprocs)
                                 conns = pool.map(get_conn, ipts)
                             else:
                                 conns = []
-                                for pair in icsa:
-                                    cc, cv = self.get_conn(pair)
+                                for ipt in ipts:
+                                    cc, cv = get_conn(ipt)
                                     conns.append( [cc,cv] )
                             gs = np.array(conns)
                             gc = ssd.squareform(gs[:,0])
@@ -1570,7 +1566,7 @@ class ParentMols(object):
                         else:
                             raise Exception('really? ')
                             #gv,gc = fa.get_amon_adjacency(k2,nas,nasv,iassU.T,rsc,pss.T,ncbsU.T)
-                        self.io.write('amon connectivity done')
+                        print('amon connectivity done')
 
                     np.fill_diagonal(gc, 0) # a cov amon is always "bonded covalently" to itself!
                     np.fill_diagonal(gv, 0) # a cov amon is always "bonded covalently" to itself!
@@ -1761,7 +1757,7 @@ class ParentMols(object):
                                 if nmaxcomb > 4:
                                     raise Exception('nmaxcomb must be <=4?')
 
-                    self.io.write('atom indices of all amons done')
+                    print('atom indices of all amons done')
 
                     if iqf and saveg and (not iqg):
                         with open(fqg, 'wb') as fid:
@@ -1787,7 +1783,7 @@ class ParentMols(object):
                         lms2.append(mi2)
                         ncplx += 1
                     print('   ## found %d mol complexes!'%ncplx)
-                    self.io.write('amons now ready for filtering')
+                    print('amons now ready for filtering')
 
 
 
@@ -1830,11 +1826,7 @@ class ParentMols(object):
             for ci in cansi2:
                 if ci not in cans:
                     cans.append(ci)
-
-
-
-
-
+        #### aaaa
 
 
 
@@ -1845,7 +1837,7 @@ class ParentMols(object):
         if not i3d:
             #assert label is not None
             if imap:
-                self.io.write(' -- now sort amon SMILES by N_I')
+                print(' -- now sort amon SMILES by N_I')
                 seta._sort2()
                 cans = seta.cans
                 self.cans = cans
@@ -1882,13 +1874,14 @@ class ParentMols(object):
                 self.maps = seta.maps2
                 self.nm = sum(ncs)
                 if wg:
-                    self.io.write(' amons are to be written to %s'%fdn)
+                    print(' amons are to be written to folder %s/'%fdn)
+                    self.io.write(' %9s   %6s %9s %9s %60s'%('#NI', '#im', '#nc', '#ic', '#SMILES'))
                     for i in range(ncan):
                         ms_i = _ms[i]; ms0_i = _ms0[i]
                         nci = ncs[i]
                         labi = '0'*(nd - len(str(i+1))) + str(i+1)
-                        self.io.write(' ++ %d %06d/%06d %60s %3d'%(nsheav[i], i+1, ncan, cans[i], nci))
-                        if ivao: print(' ++ %d %06d/%06d %60s %3d'%(nsheav[i], i+1, ncan, cans[i], nci))
+                        self.io.write('%9d   %06d %9d %9d %60s'%(nsheav[i], i+1, nci, sum(ncs[:i+1]), cans[i]))
+                        if ivao: print('%9d   %06d %9d %9d %60s'%(nsheav[i], i+1, nci, sum(ncs[:i+1]), cans[i]))
                         for j in range(nci):
                             f_j = fdn + '/frag_%s_c%05d'%(labi, j+1) + '.sdf'
                             f0_j = fdn + '/i-raw/frag_%s_c%05d_raw'%(labi, j+1) + '.sdf'
@@ -1903,7 +1896,7 @@ class ParentMols(object):
                 self.ms = ms
                 self.ncan = ncan
                 self.ms0 = ms0
-                self.io.write(' ## summary: found %d molecular graphs, %d configurations'%(ncan, self.nm) )
+                print(' ## summary: found %d molecular graphs, %d configurations'%(ncan, self.nm) )
 
     def get_matched_subm(self, ias, itype='f', otype='mol'):
         """
@@ -1999,12 +1992,23 @@ def get_conn(ipt):
                             #    print("    found vdw bond (non-HB) in", mc.can0)
                             #    if nbo1 <= 2: # 1
                             #        vc = 1
-                            if (bv0 not in obj.chbs) and nbo1 <= 2:
+
+                            if (bv0 not in obj.chbs_ext) and nbo1 <= 2:
                                 vc = 1
                         else:
-                            if nbo1 <= 2*nbv-1:
-                                print("    found multiple vdw bonds in", mc.can0)
-                                vc = 1
+                            #if nbo1 <= 2*nbv-1:
+                            #    print("    found multiple vdw bonds in", mc.can0)
+                            #    vc = 1
+
+                            ioks = [ bvi in obj.chbs for bvi in bsv0 ]
+                            if np.any(ioks):
+                                if np.sum(ioks) >= 2:
+                                    print("   found more than 2 HB's in a conj env", mc.can0, 'keep it!')
+                                    vc = 1
+                            else:
+                                if nbo1 <= 2*nbv-1:
+                                    print("    found multiple vdw bonds in", mc.can0,  'bsv=',bsv)
+                                    vc = 1
     return cc,vc
 
 

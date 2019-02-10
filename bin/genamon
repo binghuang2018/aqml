@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
-from cheminfo.oechem.amon import *
-import sys, time
+import cheminfo.oechem.amon as coa
+import cheminfo.oechem.amon_mpi as coa2
+import os, sys, time
 import argparse as ap
 
 ps = ap.ArgumentParser()
@@ -38,21 +39,25 @@ ks2 = ['saveg', 'reuseg']
 hs2 = ['save calculated mol graph, path lengths for target mol',
         'load g, pls from previously saved graph file']
 
-ks2 += ['i3d', 'verbose', 'iwarn', 'ra','iextl','debug',]
-hs2 += [ 'input contains 3d geometry',
+ks2 += ['g', 'verbose', 'iwarn', 'ra','iextl','debug',]
+hs2 += [ 'generate amon graphs only',
         'print detailed outputs of the program',
         'print warning message',
         'reduce number of amons (full geom opt by ff), default: F',
         'include extended larger amons (N_I>7), default: F',
         'debug the code']
-ks2 += [ 'fixgeom', 'iflexout', 'ivdw','ivao', 'keepHalogen',]
+ks2 += [ 'static', 'fixgeom', 'iflexout', 'ivdw','ivao', 'keepHalogen',]
 hs2 += [ 'generate satic amons, default: F',
+         'generate satic amons, default: F',
         'remove flexible amons',
         'turn on non-covalent interaction (i.e., generate vdw amons as well)', 
         'generate vdw amons only',
         'keep H-X mol as amons, where X=halogen atom' ] # help strings
 for i,key in enumerate(ks2):
     ps.add_argument('-'+key, action='store_true', help=hs2[i])
+
+
+ps.add_argument('-mpi', action='store_true', help='gen amons in parallel for many targets')
 
 #ks3 = [ 'icc4Rsp3out', 'iasp2arout', 'nogc', ]
 #hs3 = [' remove amons containing pattern [^2]~[^2]~[^2]~[^2]~[^3]',
@@ -77,11 +82,6 @@ igchk = T   # check geometry, default: T',]
 
 iocn = F # must include O=CN in amons, default: F
 
-nocrowd = F # skip crowded amons, default: F
-wg = F # write 3d geometry to files
-if ag.i3d:
-    wg = T
-    nocrowd = T
 
 
 ioc = T # must include O=C substructure as in the query, default: T
@@ -95,32 +95,44 @@ if ag.iflexout: #noextra:
 
 
 
-reduce_namons = ag.ra
-
 args = ag.ipts
-print(' -- now excuting %s'%( ' '.join(sys.argv[:]) ) )
+if len(args) < 100:
+  print(' -- now excuting %s'%( ' '.join(sys.argv[:]) ) )
+
+
+nocrowd = F # skip crowded amons, default: F
+wg = F # write 3d geometry to files
+i3d = F
+
 
 t0 = time.time()
 objs = []
-isf = F; ismi = T
 for arg in args:
     if arg[-3:] in ['smi']:
-        isf = T
         for _si in open(arg).readlines():
             si = _si.strip()
             if si != '': objs.append(si)
-    elif arg[-3:] in ['sdf','mol']:
-        #assert len(args)==1
-        isf = T; ismi = F
+    elif arg[-3:] in ['sdf', 'mol', 'pdb']:
         assert os.path.exists(arg), '#ERROR: file does not exist'
+        if not ag.g: i3d = T
         objs += [arg]
     else: # SMILES
         objs += [arg]
 
-#print('label=',ag.label)
 
-a = ParentMols(objs, reduce_namons, label=ag.label, imap=imap, fixGeom=ag.fixgeom, \
-               iextl=ag.iextl, i3d=ag.i3d, wg=wg, k=ag.k,k2=ag.k2, iprt=ag.verbose, \
+if i3d:
+    wg = T
+    nocrowd = T
+
+
+#print('label=',ag.label)
+fixgeom = (ag.fixgeom or ag.static)
+func = coa.ParentMols 
+if ag.mpi:
+    func = coa2.ParentMols
+
+a = func(objs, reduce_namons=ag.ra, label=ag.label, imap=imap, fixGeom=fixgeom, \
+               iextl=ag.iextl, i3d=i3d, wg=wg, k=ag.k,k2=ag.k2, iprt=ag.verbose, \
                gopt=ag.gopt, forcefield=ag.ff, nocrowd=nocrowd, irad=T, ichg=T, \
                ioc=ioc, iocn=iocn, icrl2o=icrl2o, igchk=igchk, \
                keepHalogen=ag.keepHalogen, irddtout=irddtout, ivdw=ag.ivdw, ivao=ag.ivao, 

@@ -180,7 +180,7 @@ class Turbomole(FileIOCalculator):
     parameter_group = {}
     parameter_units = {}
     parameter_mapping = {}
-    parameter_no_define = {'disp3': None }
+    parameter_no_define = {'disp3': None} #, 'marij': None }
 
     # nested dictionary with parameters attributes
     parameter_spec = {
@@ -573,6 +573,18 @@ class Turbomole(FileIOCalculator):
                 'updateable': True,
                 'non-define': True
                 },
+
+        'marij': {
+                'comment': 'speed-up for large mol',
+                'default': None,
+                'group': 'marij',
+                'key': 'marij',
+                'type': str,
+                'units': None,
+                'updateable': True,
+                'non-define': True
+                },
+
     }
 
     # initialize attributes

@@ -5,13 +5,21 @@ from cheminfo.rw.xyz import *
 from cheminfo.rw.sdf import *
 import cheminfo.data.atoms as cda
 import numpy as np
-import ase, os, io2
+import ase, os, io2, sys
+import cheminfo as co
 import cheminfo.molecule.core as cmc
 from ase.calculators.dftd3 import DFTD3
 import multiprocessing as mt
+import numpy.linalg as LA
+import sympy as spy
 
 def obj2m(obj, property_names=None, isimple=F, idx=None, unit=None):
     assert unit is not None
+
+    if property_names:
+        if ('nmr' in property_names) or ('chgs' in property_names):
+            isimple = T
+
     if isinstance(obj, str):
         if (not os.path.isfile(obj)):
             raise Exception('#ERROR: file does not exist')
@@ -61,7 +69,7 @@ def obj2m(obj, property_names=None, isimple=F, idx=None, unit=None):
 
     const = 1.0
     for p in props:
-        if unit in ['h','ha']: 
+        if unit in ['h','ha']:
             const = io2.Units().h2kc
         v = props[p]
         if p in ['chg','chgs','nmr','cls','force','forces','grad','grads','alpha']:
@@ -99,65 +107,6 @@ class catoms(object):
         self.ias2 = np.cumsum(self.nas)
         self.ias1 = np.concatenate(([0],self.ias2[:-1]))
 
-#   def __getitem__(self, i):
-#       if isinstance(i,int):
-#           idx=[i]
-#       else:
-#           idx = i
-#       nas = self.nas[idx]
-#       nsheav = self.nsheav[idx]
-#       zs = []; coords = []; p = {}
-#       for k in self.props.keys():
-#           p[k] = self.props[k][idx]
-#       for i,ii in enumerate(idx):
-#           ib = 0 if ii == 0 else np.sum(self.nas[:ii])
-#           ie = ib + self.nas[ii]
-#           zs = np.concatenate((zs,self.zs[ib:ie]))
-#           if i==0:
-#               coords = self.coords[ib:ie]
-#           else:
-#               coords = np.concatenate((coords,self.coords[ib:ie]) )
-#       return catoms(nas, zs, coords, nsheav, p)
-
-#   def __add__(self, o):
-#       nas = np.concatenate((self.nas, o.nas)).astype(np.int)
-#       zs = np.concatenate((self.zs, o.zs)).astype(np.int)
-#       coords = np.concatenate((self.coords, o.coords))
-#       assert o.nsheav is not None, '#ERROR: o.nsheav is None?'
-#       nsheav = np.concatenate((self.nsheav, o.nsheav))
-#       _props = self.props.copy()
-#       for k in o.props.keys():
-#           _props[k] = np.concatenate((_props[k], o.props[k]))
-#       return catoms(nas, zs, coords, nsheav, _props)
-
-
-#   @property
-#   def zsu(self):
-#       if not hasattr(self, '_zsu'):
-#           self._zsu = np.unique(self.zs)
-#       return self._zsu
-
-#   @property
-#   def zmax(self):
-#       return np.max(self.zs)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 class atoms(object):
@@ -190,14 +139,24 @@ class atoms(object):
         with open(f,'w') as fid: fid.write(so)
 
 
-class molecule(atoms):
+class molecule(co.atoms):
     """
     a single molecule read from a file or ...
     """
     def __init__(self, obj, props=None, isimple=F, unit='h'):
         nas, zs, coords, nsheav, props = obj2m(obj, props, isimple=isimple, unit=unit)
-        atoms.__init__(self, zs, coords, props=props)
+        co.atoms.__init__(self, zs, coords, props=props)
 
+
+
+class Matrix(object):
+
+    def __init__(self, ns):
+        _ns = spy.Matrix(ns)
+        reduce_form, idx = _ns.rref()
+        self.ngs = ns[:, idx]
+        self.rank = len(idx)
+        self.idx = idx # idx of independent cols
 
 
 class molecules(catoms):
@@ -411,7 +370,7 @@ class molecules(catoms):
     @property
     def iasz(self):
         """
-        return relative idx of atoms in each subset of atoms 
+        return relative idx of atoms in each subset of atoms
         associated with different Z
         """
         if not hasattr(self, '_iasz'):
@@ -435,7 +394,7 @@ class molecules(catoms):
 
     def get_atomization_energies(self, prog, meth):
         """ get AE """
-        udct = io2.Units().h2kc
+        udct = {'h':io2.Units().h2kc}
         const = 1.0
         if meth in ['a','all']:
             meths = list(self.props.keys())
@@ -447,7 +406,7 @@ class molecules(catoms):
             for zi in self.zsu:
                 si = chemical_symbols[zi]
                 #try:
-                ei0 = cda.dct[prog][si][mt]
+                ei0 = cda.dct[prog][si][mt]; #print('ei0=',ei0)
                 #except:
                 #    ei0 = cda.dct[prog][mt][si]
                 _es0[zi] = ei0 * udct['h']
@@ -456,6 +415,7 @@ class molecules(catoms):
                 ib, ie = self.ias1[i], self.ias2[i]
                 zsi = self.zs[ib:ie]
                 ei0 = np.sum([_es0[zsi]])
+                #print('props=', self.props)
                 _aes.append( self.props[mt][i] * const - ei0 )
             aes[mt] = np.array(_aes)
             #self.props[mt] = np.array(aes)
@@ -588,7 +548,9 @@ def get_dftd3_energy(ipt):
     """ Grimme's D3 correction to energy """
     fxyz, func, iabc = ipt
     sabc = ' -abc' if iabc else ''
-    e = eval(os.popen("dftd3 %s -func %s -bj%s | grep Edisp | awk '{print $NF}'"%(fxyz,func,sabc)).read().strip())
+    cmd = "dftd3 %s -func %s -bj%s | grep Edisp | awk '{print $NF}'"%(fxyz,func,sabc)
+    #print(cmd) #; sys.exit(2)
+    e = eval(os.popen(cmd).read().strip())
     return e
 
 
