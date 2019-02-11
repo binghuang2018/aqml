@@ -18,17 +18,21 @@ Then a folder named `g7` would be created, including sdf files of corresponding 
 Now we need to generate reference data for training/test.
 Here we consider only the single point energy calculated at B3LYP/cc-pVDZ level for a ground state QM9 molecule.
 
-  - First generate input files for ORCA 4
+  - First generate input files for ORCA 4:
 ```bash
-gen_orca_input -t optg -m b3lyp -b vdz -loose g7/*.xyz target/*.xyz
+gen_orca_jobs -loose -t optg -m b3lyp -b vdz -n 1 g7/*.sdf target/*.sdf
 ```
+The option `-n 1` specifies the number of processes to be used. Choose a larger number to speed up computations.
 
-  - run orca4
+  - run orca4 jobs:
 ```bash
 batch_orca g7/*.com target/*.com >out1 &
 ```
+Note: before running, the user needs to reset the path to `orca4` in file `bin/batch_orca_base`.
 
-  - Convert output files to xyz format once all calculations were done.
+Reference input & output files of orca4 jobs are provided under folder `reference/`.
+
+  - Convert output files to xyz format once all calculations are done:
 ```bash
 orca2xyz g7/*.out target/*.out
 ```
