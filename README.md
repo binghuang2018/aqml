@@ -102,12 +102,7 @@ cd aqml/coreml
 python setup.py install
 ```
 
-- Install python codes
-```bash
-echo "export PYTHONPATH=$PWD:\$PYTHONPATH" >>~/.bashrc
-echo "export PATH=$PWD/bin:\$PATH" >>~/.bashrc
-source ~/.bashrc
-```
+- Install python codes through `./install.sh`
 
 Now you are ready to go!
 
