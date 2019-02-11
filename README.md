@@ -167,6 +167,8 @@ frag_3_c00001.sdf  frag_5_c00001.sdf  frag_6_c00002.sdf  map.h5
 As one can see from above, there are three kinds of files: i) sdf files storing 3d geometry of amon conformer has the format `frag_[digit(s)]_c[digits].sdf`, where the first entry of digits is the numbering of mol graphs, while the second entry corresponds to the numbering of associated conformers for each mol graph. ii) a mapping file `map.h5`, containing the idx of amons (of the same order as above for amons in file `g6.txt`) for all query molecules. If there is only one query mol,
 this file is not useful at all. iii) the folder `i-raw/` stores the original local geometry of fragments of the query mol(s). There exists a 1-to-1 mapping from each sdf file in `g7/` and `g7/i-raw`. E.g., for the file `frag_6_c00002.sdf` under `g7/`, the corresponding file in `g7/i-raw/` is `frag_6_c00002_raw.sdf`. The only difference is that newly added hydrogen atoms in `frag_6_c00002.sdf` are optimized by MMFF94, while the H's in `frag_6_c00002_raw.sdf` are not.
 
+To speed up generation of amons when a large amount of files are given as input, an option `-mpi` can be specified together with `-nprocs [NPROCS]`. Essentially, the python module `multithreading` was used.
+
 
 ## Python shell
 
@@ -204,10 +206,11 @@ Meanwhile, the same files (`g5.out` and directory `g5/`) would be generated as i
 # Demo
 
 A Demo is provided for an exemplified QM9 molecule (molecule III in Fig. 2C of reference [huang2017dna]), covering the four essential aspects of AML:
-a) generation of amons
-b) quantum chemistry calculations
-c) generation of (a)SLATM representation 
-d) AML prediction of the total energy of the exemplified molecule.
+
+- generation of amons
+- quantum chemistry calculations
+- generation of (a)SLATM representation 
+- AML prediction of the total energy of the exemplified molecule.
 
 
 # Publications
