@@ -120,9 +120,10 @@ conda install -y -c openbabel openbabel
 
 # Usage
 
-Two options are available for generation of amons.
+Here, we offer the very basic usage of the codes: amons generation. For more, refer to Jupyter notebooks under folder doc/.
+Overall, two options are available for generation of amons.
 
-## commandline
+## Commandline
 
 Example:
 
@@ -151,17 +152,18 @@ gives the following output
 ```
 and a file `g6.out` summarizing the generated amons
 ```bash
- amons are to be written to the folder g6/
- ++ 1 000001/000007                                                            O   1
- ++ 2 000002/000007                                                          C=C   1
- ++ 3 000003/000007                                                         C=CO   2
- ++ 4 000004/000007                                                       C=CC=C   1
- ++ 5 000005/000007                                                    C=CC(=C)O   2
- ++ 5 000006/000007                                                      C=CC=CO   2
- ++ 6 000007/000007                                                     c1ccccc1   1
- ## summary: found 7 molecular graphs, 10 configurations
+       #NI      #im       #nc       #ic                                                      #SMILES
+        1   000001         1         1                                                            O
+        2   000002         1         2                                                          C=C
+        3   000003         2         4                                                         C=CO
+        4   000004         1         5                                                       C=CC=C
+        5   000005         2         7                                                    C=CC(=C)O
+        5   000006         2         9                                                      C=CC=CO
+        6   000007         1        10                                                     c1ccccc1
 ```
-and a folder `g6/` containing the following files:
+where `NI` indicates the number of heavy atoms, `im` is the index of unique amon (amon graph), `nc` is the number of conformers associated with each amon graph, `ic` is the index of cumunative index of amon conformers, `SMILES` is of OEChem standard.
+
+Meanwhile, a folder `g6/` is also generated, containing the following files:
 ```bash
 frag_1_c00001.sdf  frag_3_c00002.sdf  frag_5_c00002.sdf  frag_7_c00001.sdf
 frag_2_c00001.sdf  frag_4_c00001.sdf  frag_6_c00001.sdf  i-raw/
@@ -171,9 +173,9 @@ As one can see from above, there are three kinds of files: i) sdf files storing 
 this file is not useful at all. iii) the folder `i-raw/` stores the original local geometry of fragments of the query mol(s). There exists a 1-to-1 mapping from each sdf file in `g7/` and `g7/i-raw`. E.g., for the file `frag_6_c00002.sdf` under `g7/`, the corresponding file in `g7/i-raw/` is `frag_6_c00002_raw.sdf`. The only difference is that newly added hydrogen atoms in `frag_6_c00002.sdf` are optimized by MMFF94, while the H's in `frag_6_c00002_raw.sdf` are not.
 
 
-## python functions
+## Python shell
 
-### amons graph generataion
+### Amon graphs generataion
 
 If your input is mol graph, the output is also mol graph, though of smaller size.
 
@@ -188,7 +190,7 @@ If your input is mol graph, the output is also mol graph, though of smaller size
 
 ```
 
-### amons conformer generataion
+### Amons conformer generataion
 
 If your input is mol graph together with 3d coordinates (such as a sdf file), the output is amons with 3d coords (hereafter we call them amons conformers).
 
@@ -203,13 +205,23 @@ If your input is mol graph together with 3d coordinates (such as a sdf file), th
 ```
 Meanwhile, the same files (`g5.out` and directory `g5/`) would be generated as in the case of running `genamon` from the commandline above.
 
+
+# Demo
+
+A Demo is provided for an exemplified QM9 molecule (molecule III in Fig. 2C of reference [huang2017dna]), covering the four essential aspects of AML:
+a) generation of amons
+b) quantum chemistry calculations
+c) generation of (a)SLATM representation 
+d) AML prediction of the total energy of the exemplified molecule.
+
+
 # Publications
 
 If you have used `aqml` in your research, please consider citing these papers:
 
 - "Understanding molecular representations in machine learning: The role of uniqueness and target similarity", B. Huang, OAvL,J. Chem. Phys. (Communication) 145 161102 (2016), https://arxiv.org/abs/1608.06194
 - "Boosting quantum machine learning models with multi-level combination technique: Pople diagrams revisited" P. Zaspel, B. Huang, H. Harbrecht, OAvL submitted to JCTC (2018) https://arxiv.org/abs/1808.02799
-- "The DNA of chemistry: Scalable quantum machine learning with amons", B. Huang, OAvL, accepted by Nature Chemistry (2020) https://arxiv.org/abs/1707.04146
+- "The DNA of chemistry: Scalable quantum machine learning with amons", B. Huang, OAvL, https://arxiv.org/abs/1707.04146
 
 ```bash
 @article{huang2017dna,
