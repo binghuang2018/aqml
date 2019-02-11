@@ -1,14 +1,21 @@
 
 
-# Amons generation: generation of training molecules
+Suppose we are given a target molecule (a QM9 molecule containing 9 heavy atoms), with geometrical information stored in file `target/01.sdf`, our aim is to predict its total energy trained on a set of smaller fragments (amons) containing no more than 7 heavy atoms.
+
+## Amons generation
+
+First of all, we generate amons of the target molecule. The initial geometries were optimized by force field approaches during amons generation. The code to do this is:
 
 ```bash
 genamon target/01.sdf
 ```
-Then a folder named `g7` would be created, including sdf files of generated amons.
 
-# Quantum chemical calculations: generation of reference data for training/test
+Then a folder named `g7` would be created, including sdf files of corresponding amons.
 
+
+## Running quantum chemical calculations
+
+Now we need to generate reference data for training/test.
 Here we consider only the single point energy calculated at B3LYP/cc-pVDZ level for a ground state QM9 molecule.
 
   - First generate input files for ORCA 4
@@ -26,7 +33,7 @@ batch_orca g7/*.com target/*.com >out1 &
 orca2xyz g7/*.out target/*.out
 ```
 
-# AML prediction
+## AML prediction
 
 ```bash
 
@@ -35,12 +42,6 @@ aqml -train g7/ -test target/
 
 Outputs:
 ```bash
-_wd= g7
-test= ['target']
-i= 1 n1= 16
-    dsmax= {1: 0.4846066873981408, 6: 4.989837632856394, 8: 0.480229030398199}
-cab= False dsmax= [4.8461e-01 1.0000e-09 1.0000e-09 1.0000e-09 1.0000e-09 4.9898e+00
- 1.0000e-09 4.8023e-01]
     coeff= 1.0 llambda= 0.0001
    1      1    1167.1923    1167.1923  (DressedAtom mae=  -1882.0703)
    2      3     130.1885     130.1885  (DressedAtom mae=    130.1885)
