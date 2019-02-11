@@ -102,7 +102,7 @@ cd aqml/coreml
 python setup.py install
 ```
 
-- Install python codes through `./install.sh`
+- Install python code through `./install.sh`
 
 Now you are ready to go!
 
@@ -115,7 +115,7 @@ conda install -y -c openbabel openbabel
 
 # Usage
 
-Here, we offer the very basic usage of the codes: amons generation. For more, refer to Jupyter notebooks under folder doc/.
+Here, we offer the very basic usage of the code: amons generation. For more, refer to Jupyter notebooks under folder doc/.
 Overall, two options are available for generation of amons.
 
 ## Commandline
@@ -133,7 +133,7 @@ produces 7 unique canonical SMILES (oechem standard)
 cans= ['C', 'C=C', 'C=CC=C', 'CC=C', 'CC(=C)C=C', 'CC=CC=C', 'c1ccccc1']
 ```
 
-2) Generating amons with 3D coordinates if the input contains 3D coords
+2) Generating amons with 3D coordinates if the input contains 3D coords (option `-i3d` could be skipped if input file is of the following formats: `sdf`, `mol` or `pdb`. Abitrary number of input files is supported).
 ```bash
   $ genamon -k 6 -i3d test/phenol.sdf
 ```
@@ -164,7 +164,7 @@ frag_1_c00001.sdf  frag_3_c00002.sdf  frag_5_c00002.sdf  frag_7_c00001.sdf
 frag_2_c00001.sdf  frag_4_c00001.sdf  frag_6_c00001.sdf  i-raw/
 frag_3_c00001.sdf  frag_5_c00001.sdf  frag_6_c00002.sdf  map.h5
 ```
-As one can see from above, there are three kinds of files: i) sdf files storing 3d geometry of amon conformer has the format `frag_[digit(s)]_c[digits].sdf`, where the first entry of digits is the numbering of mol graphs, while the second entry corresponds to the numbering of associated conformers for each mol graph. ii) a mapping file map.h5, containing the idx of amons (of the same order as above for amons in file `g6.txt`) for all query molecules. If there is only one query mol,
+As one can see from above, there are three kinds of files: i) sdf files storing 3d geometry of amon conformer has the format `frag_[digit(s)]_c[digits].sdf`, where the first entry of digits is the numbering of mol graphs, while the second entry corresponds to the numbering of associated conformers for each mol graph. ii) a mapping file `map.h5`, containing the idx of amons (of the same order as above for amons in file `g6.txt`) for all query molecules. If there is only one query mol,
 this file is not useful at all. iii) the folder `i-raw/` stores the original local geometry of fragments of the query mol(s). There exists a 1-to-1 mapping from each sdf file in `g7/` and `g7/i-raw`. E.g., for the file `frag_6_c00002.sdf` under `g7/`, the corresponding file in `g7/i-raw/` is `frag_6_c00002_raw.sdf`. The only difference is that newly added hydrogen atoms in `frag_6_c00002.sdf` are optimized by MMFF94, while the H's in `frag_6_c00002_raw.sdf` are not.
 
 
