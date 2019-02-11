@@ -161,7 +161,7 @@ and a file `g6.out` summarizing the generated amons
         5   000006         2         9                                                      C=CC=CO
         6   000007         1        10                                                     c1ccccc1
 ```
-where `NI` indicates the number of heavy atoms, `im` is the index of unique amon (amon graph), `nc` is the number of conformers associated with each amon graph, `ic` is the index of cumunative index of amon conformers, `SMILES` is of OEChem standard.
+where `NI` indicates the number of heavy atoms, `im` is the index of unique amon (amon graph), `nc` is the number of conformers associated with each amon graph, `ic` is the cumulative index of amon conformers, `SMILES` is of OEChem standard.
 
 Meanwhile, a folder `g6/` is also generated, containing the following files:
 ```bash
