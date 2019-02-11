@@ -16,7 +16,7 @@ Then a folder named `g7` would be created, including sdf files of corresponding 
 ## Running quantum chemical calculations
 
 Now we need to generate reference data for training/test.
-Here we consider only the single point energy calculated at B3LYP/cc-pVDZ level for a ground state QM9 molecule.
+Here we consider only the ground state single point energy calculated at B3LYP/cc-pVDZ level for the target QM9 molecule.
 
   - First generate input files for ORCA 4:
 ```bash
@@ -56,7 +56,7 @@ Outputs:
    7     16       0.2251       0.2251  (DressedAtom mae=     17.9935)
  elapsed time:  0.5318758487701416  seconds
 ```
-The above output shows that AML upderestimate the total energy of target molecule by 0.2251 kcal/mol.
+The above output shows that AML upderestimate the total energy of the target molecule by 0.2251 kcal/mol, after training on 16 amons containing at most 7 heavy atoms.
 
 To print out atomic contribution to the atomization energy, add two more options in the commandline, I.e.,
 

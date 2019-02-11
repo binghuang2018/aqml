@@ -205,7 +205,7 @@ Meanwhile, the same files (`g5.out` and directory `g5/`) would be generated as i
 
 # Demo
 
-A Demo is provided for an exemplified QM9 molecule (molecule III in Fig. 2C of reference [huang2017dna]), covering the four essential aspects of AML:
+A Demo is provided for an exemplified QM9 molecule (molecule I in Fig. 2C of reference [huang2017dna]), covering the four essential aspects of AML:
 
 - generation of amons
 - quantum chemistry calculations

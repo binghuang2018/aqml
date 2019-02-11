@@ -1,0 +1,256 @@
+#!/usr/bin/env python
+
+import re, os, sys, io2, ase
+import cheminfo as co
+
+T, F = True, False
+
+uc = io2.Units()
+
+bdct = {'cc-pVDZ':'vdz', 'cc-pVTZ':'vtz', 'cc-pVQZ':'vqz'}
+cardinal = {'vdz':2, 'vtz':3, 'vqz':4}
+
+cmdout = lambda cmd: os.popen(cmd).read().strip()
+cmdout1 = lambda cmd: os.popen(cmd).read().strip().split('\n')
+
+class orcajob(object):
+
+    def __init__(self, f):
+        self.f = f
+
+    @property
+    def icbs(self):
+        if not hasattr(self, '_icbs'):
+            self._icbs = self.get_icbs()
+        return self._icbs
+
+    def get_icbs(self):
+        key = 'Extrapolate'
+        icbs = F
+        if cmdout('grep "%s" %s'%(key, self.f)) != '':
+            icbs = T
+        return icbs
+
+    @property
+    def atoms(self):
+        if not hasattr(self, '_atoms'):
+            self._atoms = self.get_atoms()
+        return self._atoms
+
+    def get_atoms(self):
+        cmd = "grep 'basis set group' %s | tail -1 | awk '{print $2}' | grep -o '[0-9]*'"%self.f
+        na = int( cmdout(cmd) ) + 1 # atom idx in orca starts from 0
+        cmd = "grep -n 'CARTESIAN COORDINATES (ANGSTROEM)' %s | tail -1 | sed 's/:/ /g' | awk '{print $1}'"%self.f
+        ln1 = 2 + int(cmdout(cmd))
+        ln2 = ln1+na-1
+        cmd = 'sed -n "%s,%sp" %s'%(ln1,ln2,self.f)
+        zs = []; coords = []
+        for li in cmdout1(cmd):
+            tsi = li.strip().split()[:4]
+            zs.append( co.chemical_symbols.index(tsi[0]) )
+            coords.append( [ eval(vi) for vi in tsi[1:4] ] )
+        return co.atoms(zs,coords)
+
+    @property
+    def meth(self):
+        if not hasattr(self, '_meth'):
+            self._meth = self.get_meth()
+        return self._meth
+
+    def get_meth(self):
+        _meth = None
+        idft = F
+        ifd = F
+        for meth in ['b3lyp', 'wb97x', 'tpss', 'pbeh-3c', 'pbe0', 'pbe']:
+            if cmdout('grep -i %s %s'%(meth,self.f)):
+                _meth = meth if meth != 'pbeh-3c' else 'pbeh3c'
+                idft = T
+                ifd = T
+                break
+
+        #if not ifd:
+        meths_i = ['dlpno-mp2', 'ri-mp2', 'mp2']
+        meths_o = ['lmp2',      'mp2',    'mp2' ]
+        dct = dict(zip(meths_i, meths_o))
+        for meth in meths_i:
+            ot = cmdout('grep -i "%s" %s'%(meth, self.f))
+            if ot and ('!' in ot):
+                _meth = dct[meth]
+                ifd = T
+                break
+
+        #if nof ifd:
+        meths_i = ['dlpno-ccsd(t)', 'dlpno-ccsd', 'ccsd(t)', 'ccsd']
+        meths_o = ['lcc2',      'lcc',    'cc2', 'cc' ]
+        dct = dict(zip(meths_i, meths_o))
+        for meth in meths_i:
+            ot = cmdout('grep -i "%s" %s'%(meth, self.f))
+            if ot and ('!' in ot):
+                _meth = dct[meth]
+                ifd = T
+                break
+
+        assert _meth
+        # dispersion interaction?
+        if idft:
+            ot = cmdout('grep D3BJ %s'%self.f)
+            if ot and ('!' in ot):
+                _meth += 'd3'
+        return _meth
+
+    bsts =  ['aug-cc-pvdz', 'aug-cc-pvtz', 'aug-cc-pvqz', \
+             'cc-pvdz', 'cc-pvtz', 'cc-pvqz', \
+             'def2-sv(p)', 'def2-svp', 'def2-tzvp', 'def2-qzvp', \
+             '6-31g(d)']
+    bsts_short = ['avdz', 'avtz', 'avqz', 'vdz', 'vtz','vqz', 'def2sv-p', 'def2svp', 'def2tzvp', 'def2qzvp', '631gd']
+    dctb = dict(zip(bsts, bsts_short))
+
+    @property
+    def basis(self):
+        if not hasattr(self, '_basis'):
+            self._basis = self.get_basis()
+        return self._basis
+
+    def get_basis(self):
+        _bst = None
+        if self.meth in ['pbeh3c']:
+            _bst = ''
+        else:
+            for b in self.bsts:
+                if cmdout('grep -i "%s" %s'%(b,self.f)):
+                    _bst = self.dctb[b]
+                    break
+            assert _bst, 'Plz add more reference basis'
+        return _bst
+
+    @property
+    def qcl(self):
+        """ quantum chemistry level """
+        if not hasattr(self, '_qcl'):
+            self._qcl = self.meth + self.basis
+        return self._qcl
+
+    @property
+    def polar(self):
+        if not hasattr(self, '_polar'):
+            t = cmdout("grep 'Isotropic polarizability' %s | tail -n 1 | awk '{print $NF}'"%self.f)
+            pol = None
+            if t == '':
+                print(' No polarizability found!')
+            else:
+                pol = eval(t)
+            self._polar = pol
+        return self._polar
+
+    @property
+    def es(self):
+        if not hasattr(self, '_es'):
+            self._es = self.get_energies()
+        return self._es
+
+    def get_energies(self):
+
+        if not self.icbs: # Extrapolate tp CNS
+            cmd = "grep 'FINAL SINGLE POINT' %s | tail -n 1 | awk '{print $NF}'"%self.f
+            #print(cmd)
+            e = eval( cmdout(cmd) ) # in hartree
+            es = {self.qcl: e}
+        else:
+            cmd = "grep 'SCF energy with basis' %s | awk '{print $5}'"%f
+            bsts = [ bdct[si[:-1]] for si in cmdout1(cmd) ]; #print(bsts)
+            scfmeths = [ 'hf'+si for si in bsts ]
+            n1, n2 = [ cardinal[bst] for bst in bsts ]
+            scfcbsmeth = 'hfcbsv%d%dz'%(n1,n2)
+  
+            cmd = "grep 'SCF energy with basis' %s | awk '{print $NF}'"%f
+            t = cmdout(cmd); #print('t=',t)
+            es_hf = [ eval(ei) for ei in t.split('\n') ]; #print(es_hf)
+            dct = dict(zip(scfmeths, es_hf))
+  
+            cmd = "grep '^MP2 energy with basis' %s | awk '{print $6}'"%f
+            t = cmdout(cmd)
+            # print('t=',t)
+            imp2 = F
+            if t:
+                imp2 = T
+                es_corr = t.split('\n'); #print(es_corr)
+                smeths = [ 'mp2'+si for si in bsts ]
+                dct.update( dict(zip(smeths, [eval(ei)+es_hf[i] for i,ei in enumerate(es_corr)])) )
+  
+            cbsmeth = None
+  
+            icc2 = F
+            cmd = "grep '^MDCI energy with basis ' %s"%f
+            t = cmdout(cmd)
+            if t:
+                icc2 = T
+                es_cc2 = []
+                ts = t.split('\n')
+                for i,ti in enumerate(ts):
+                    #print('ti=',ti)
+                    es_cc2.append( es_hf[i]+eval(re.findall('\-?[0-9][0-9]*\.[0-9][0-9]*', ti)[0]) )
+                smeths = ['cc2'+si for si in bsts ]
+                dct.update( dict(zip(smeths, es_cc2)) )
+                cbsmeth = 'cc2cbsv%d%dz'%(n1,n2)
+  
+            icmp2 = F # corr from mp2?
+            cmd = "grep 'CCSD(T) correlation energy with basis' %s | awk '{print $NF}'"%f
+            t = cmdout(cmd)
+            if t:
+                icmp2 = T
+                e_cc2_corr = eval(t.strip())
+                bst1 = bsts[0]
+                dct.update( {'cc2%s'%bst1: es_hf[0]+e_cc2_corr} )
+                cbsmeth = 'cc2cbsmp2v%d%dz'%(n1,n2)
+  
+            assert cbsmeth, '#ERROR: `cbsmeth is None?'
+  
+            cmd = "grep ' CBS [Sct]' %s"%f
+            #cmd = "grep 'Estimated CBS total energy' %s | awk '{print $NF}'"%f
+            t = cmdout(cmd); #print('t=',t)
+            e1, e1c, e2 = [ eval(re.findall('\-?[0-9][0-9]*\.[0-9][0-9]*', ei)[0]) for ei in t.split('\n') ]
+            escbs = [e1, e2]; #print(escbs)
+  
+            meths = [scfcbsmeth, cbsmeth] # 'cc2cbs34']
+            dct.update( dict(zip(meths, escbs)) )
+  
+            sdic = "'%s':{"%f[:-4]
+            for k in dct:
+                sdic += "'%s':%.8f, "%(k,dct[k])
+            sdic += '}'
+            print( sdic, ',') #"'%s':"%f[:-4], dct,',' ) # dct['hfcbs'] * uc.h2kc)
+
+            es = dct
+        return es
+
+    def write(self, fo, props=['e']):
+        es = self.es
+        atoms = self.atoms
+        if 'e' in props:
+            atoms.props.update(self.es)
+        if 'polar' in props:
+            atoms.props.update({'polar':self.polar})
+        atoms.write(fo)
+
+
+
+import argparse as ap
+
+ps = ap.ArgumentParser()
+
+ps.add_argument('-p', '-props', dest='props', nargs='?', default='e', type=str)
+ps.add_argument('fs', nargs='*', type=str)
+
+ag = ps.parse_args()
+
+for f in ag.fs:
+    if not os.path.exists(f):
+        print("  now '%s': ** no such file"%f)
+        continue
+    print(" now %s"%f)
+    #try:
+    obj = orcajob(f)
+    obj.write(f[:-4]+'.xyz', props=ag.props)
+    #except:
+    #    print(' ** failed to read/write')
+
