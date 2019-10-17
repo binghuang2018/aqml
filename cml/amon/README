@@ -1,0 +1,8 @@
+
+The module inside this folder allows one to
+
+* enumerate all kekule structure of a molecule (which is highly desired by many people)
+* and as a side product, one could also obtain resonance structures with charge seperated.
+
+Todo list:
+* better interface
