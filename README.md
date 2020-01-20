@@ -12,7 +12,6 @@ Features:
 Todo's
 1) Distored configuration generation on-the-fly for MD 
    * Use SLATM-derived metric
-
 2) force prediction using SLATM
    * geometry optimization, molecular dynamics
   
