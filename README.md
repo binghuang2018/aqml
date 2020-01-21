@@ -13,16 +13,18 @@ Amons-based quantum machine learning for quantum chemistry
 
 
 # Features:
-1) Parameter-free global SLATM representations, and its local (atomic) counterpart aSLATM. SLATM is the abbreviation of Spectrum of London and Axilrod-Teller-Muto potential.
+- Parameter-free global SLATM representations, and its local (atomic) counterpart aSLATM. SLATM is the abbreviation of Spectrum of London and Axilrod-Teller-Muto potential.
    * A new pair-wise version is available, dealing with dataset consisting of many elements.
-2) BAML representation, including up to 4-body potential (UFF inspired)
-3) KRR, multi-fidelity KRR
-4) Automatic sampling of training set that are most representative for any query molecule (composition and size-independent. So far, limited to molecules without periodic boundary condition).
+- BAML representation, including up to 4-body potential (UFF inspired)
+- Multi-fidelity KRR
+- Automatic sampling of training set that are most representative for any query molecule
+ - composition and size-independent
+ - limited to molecules with explicit graph (w/wo periodic boundary condition)
 
 
 # Todo's
-1) Remove the dependency on `ase` and `oechem`
-2) force prediction using SLATM
+- Remove the dependency on `ase` and `oechem`
+- force prediction using SLATM
    * geometry optimization, molecular dynamics
 
 
