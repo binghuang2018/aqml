@@ -13,9 +13,9 @@ Amons-based quantum machine learning for quantum chemistry
 
 
 # Features:
-1) Parameter-free SLATM representations, and its local (atomic) counterpart.
+1) Parameter-free global SLATM representations, and its local (atomic) counterpart aSLATM. SLATM is the abbreviation of Spectrum of London and Axilrod-Teller-Muto potential.
    * A new pair-wise version is available, dealing with dataset consisting of many elements.
-2) BAML representation, including up to 4-body potential (force-field inspired)
+2) BAML representation, including up to 4-body potential (UFF inspired)
 3) KRR, multi-fidelity KRR
 4) Automatic sampling of training set that are most representative for any query molecule (composition and size-independent. So far, limited to molecules without periodic boundary condition).
 
@@ -49,7 +49,6 @@ optional:
 - `deepdish`: hdf5 python library
 
 I recommend using `conda` (for Python 3+) to install all dependencies
-[https://conda.io/docs/user-guide/install/index.html](https://conda.io/docs/user-guide/install/index.html).
 
 
 ## Build & Install 
