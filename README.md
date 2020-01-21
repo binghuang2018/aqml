@@ -72,6 +72,11 @@ echo "export OE_LICENSE=/path/to/oe_license.txt" >>~/.bashrc
 conda install -y -c rdkit rdkit 
 ```
 
+- other dependencies
+```bash
+pip install ase imolecule networkx 
+```
+
 - clone the repository
 
 ```bash
