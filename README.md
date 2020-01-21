@@ -224,6 +224,14 @@ optional arguments:
   -nmaxcomb [NMAXCOMB]
   -thresh [THRESH]
 ```
+- generate SMILES only without 3d coordinates
+```bash
+genamon -k 6 -i3d F -verbose 0 "Cc1ccccc1"
+```
+produces 7 unique canonical SMILES (oechem standard)
+```bash
+cans= ['C', 'C=C', 'C=CC=C', 'CC=C', 'CC(=C)C=C', 'CC=CC=C', 'c1ccccc1']
+```
 
 
 ## python functions
