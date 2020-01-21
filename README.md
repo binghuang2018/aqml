@@ -1,20 +1,20 @@
 aqml
 =====
 
+Amons-based quantum machine learning for quantum chemistry
+
 ***
 
-*Author:* Tristan Bereau (Max Planck Institute for Polymer Research,
- Mainz, Germany)
+*Author:* Bing Huang (University of Basel, Switzerland)
 
 [http://www2.mpip-mainz.mpg.de/~bereau/](http://www2.mpip-mainz.mpg.de/~bereau/)
 
-*Created:* 2017
+*Created:* 2019
 
 ***
 
-Amons-based quantum machine learning for quantum chemistry
 
-## Features:
+# Features:
 1) Parameter-free SLATM representations, and its local (atomic) counterpart.
    * A new pair-wise version is available, dealing with dataset consisting of many elements.
 2) BAML representation, including up to 4-body potential (force-field inspired)
@@ -22,7 +22,7 @@ Amons-based quantum machine learning for quantum chemistry
 4) Automatic sampling of training set that are most representative for any query molecule (composition and size-independent. So far, limited to molecules without periodic boundary condition).
 
 
-## Todo's
+# Todo's
 1) Distored configuration generation on-the-fly for MD 
    * Use SLATM-derived metric
 2) force prediction using SLATM
@@ -31,7 +31,7 @@ Amons-based quantum machine learning for quantum chemistry
 Usage
 1) bin/aqml: 
 
-## Publication
+# Publication
 For a detailed account of the implementation, see:
 
 Tristan Bereau, Robert A. DiStasio Jr., Alexandre Tkatchenko, 
@@ -41,16 +41,17 @@ from machine learning_,
 The Journal of Chemical Physics *148*, 241706 (2018); see also [link](https://aip.scitation.org/doi/abs/10.1063/1.5009502)
 
 
-## Installation
+# Installation
 
-### Requirements
+## Requirements
 
 `ipml` is a python script that requires a number of dependencies:
 
-- `numpy`
-- `scipy`
-- `numba`
-- `qml`
+- `numpy`, `scipy`
+- `oechem`, `rdkit`
+
+optional:
+- `dftd3`, 
 
 I recommend using `conda` (for Python 2.7) to install all dependencies
 [https://conda.io/docs/user-guide/install/index.html](https://conda.io/docs/user-guide/install/index.html).
@@ -62,10 +63,31 @@ documentation: [http://www.qmlcode.org/installation.html](http://www.qmlcode.org
 Make sure you have `git lfs` installed. See documentation
   [https://git-lfs.github.com](https://git-lfs.github.com)
 
-### Installation
+## Install 
 
 Clone the repository
 
 ```bash
 git clone https://gitlab.mpcdf.mpg.de/trisb/ipml.git
 ```
+
+# Usage
+
+## commandline
+bin/aqml -h
+
+## python script
+
+### amons generataion
+```bash
+import cheminfo.oechem.amon as coa
+
+obj = coa.ParentMols(fs)
+a = obj.generate_amons()
+a.cans
+
+```
+
+
+
+
