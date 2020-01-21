@@ -26,9 +26,6 @@ Amons-based quantum machine learning for quantum chemistry
    * Use SLATM-derived metric
 3) force prediction using SLATM
    * geometry optimization, molecular dynamics
-  
-Usage
-1) bin/aqml: 
 
 
 # Installation
@@ -56,12 +53,6 @@ optional:
 I recommend using `conda` (for Python 3+) to install all dependencies
 [https://conda.io/docs/user-guide/install/index.html](https://conda.io/docs/user-guide/install/index.html).
 
-Link to the `qml` package:
-[https://github.com/qmlcode/qml](https://github.com/qmlcode/qml). 
-documentation: [http://www.qmlcode.org/installation.html](http://www.qmlcode.org/installation.html).
-
-Make sure you have `git lfs` installed. See documentation
-  [https://git-lfs.github.com](https://git-lfs.github.com)
 
 ## Build & Install 
 
@@ -73,13 +64,16 @@ Steps
 
 
   - oechem
+    - apply for an academic license from https://www.eyesopen.com/academic-licensing
 ```bash
 [macos] pip install -i https://pypi.anaconda.org/openeye/simple openeye-toolkits-python3-osx-x64
 [linux] pip install -i https://pypi.anaconda.org/openeye/simple openeye-toolkits-python3-linux-x64
 ```
+
   - rdkit
+```bash
+conda install -y -c rdkit rdkit 
 ```
-conda install -y -c rdkit rdkit ```
 
 - Clone the repository
 
@@ -95,11 +89,12 @@ python setup.py install
 
 - Install python codes
 ```bash
-cpwd=$PWD
 echo "export PYTHONPATH=$PWD:$PYTHONPATH" >>~/.bashrc
 echo "export PATH=$PWD/bin:$PATH >>~/.bashrc
-source ~/.bashrc```
+source ~/.bashrc
+```
 
+Now you are ready to go!
 
 # Usage
 
