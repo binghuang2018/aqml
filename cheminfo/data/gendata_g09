@@ -1,0 +1,51 @@
+
+
+toxyz -p HF -unit h */*out
+
+s2 = """b3lyp631g2dfp-g09/Br.xyz:HF=-2571.8235791
+b3lyp631g2dfp-g09/Cl.xyz:HF=-460.1366859
+b3lyp631g2dfp-g09/C.xyz:HF=-37.8467717
+b3lyp631g2dfp-g09/F.xyz:HF=-99.7187304
+b3lyp631g2dfp-g09/H.xyz:HF=-0.5002728
+b3lyp631g2dfp-g09/N.xyz:HF=-54.5838615
+b3lyp631g2dfp-g09/O.xyz:HF=-75.0645794
+b3lyp631g2dfp-g09/P.xyz:HF=-341.2575546
+b3lyp631g2dfp-g09/S.xyz:HF=-398.1057561
+b3lypdef2tzvp-g09/Br.xyz:HF=-2574.1409432
+b3lypdef2tzvp-g09/Cl.xyz:HF=-460.1669789
+b3lypdef2tzvp-g09/C.xyz:HF=-37.8594785
+b3lypdef2tzvp-g09/F.xyz:HF=-99.7701508
+b3lypdef2tzvp-g09/H.xyz:HF=-0.5021542
+b3lypdef2tzvp-g09/N.xyz:HF=-54.6039774
+b3lypdef2tzvp-g09/O.xyz:HF=-75.0962771
+b3lypdef2tzvp-g09/P.xyz:HF=-341.2805908
+b3lypdef2tzvp-g09/S.xyz:HF=-398.1323744
+b3lypvtz-g09/Br.xyz:HF=-2574.1876331
+b3lypvtz-g09/Cl.xyz:HF=-460.1746648
+b3lypvtz-g09/C.xyz:HF=-37.8585747
+b3lypvtz-g09/F.xyz:HF=-99.7628668
+b3lypvtz-g09/H.xyz:HF=-0.5021563
+b3lypvtz-g09/N.xyz:HF=-54.6017813
+b3lypvtz-g09/O.xyz:HF=-75.0918643
+b3lypvtz-g09/P.xyz:HF=-341.2858505
+b3lypvtz-g09/S.xyz:HF=-398.1386933
+wb97xdef2tzvp-g09/Br.xyz:HF=-2574.1405094
+wb97xdef2tzvp-g09/Cl.xyz:HF=-460.1467358
+wb97xdef2tzvp-g09/C.xyz:HF=-37.8459781
+wb97xdef2tzvp-g09/F.xyz:HF=-99.7471707
+wb97xdef2tzvp-g09/H.xyz:HF=-0.5013925
+wb97xdef2tzvp-g09/N.xyz:HF=-54.5915914
+wb97xdef2tzvp-g09/O.xyz:HF=-75.0768759
+wb97xdef2tzvp-g09/P.xyz:HF=-341.2530976
+wb97xdef2tzvp-g09/S.xyz:HF=-398.1079436"""
+dct = {}
+for si in ['H','C','N','O','F','P','S','Cl','Br']: dct[si] = {}
+#dct = {'wb97xdef2tzvp':{},'b3lypdef2tzvp':{}}
+for li in s2.split('\n'):
+    a0, b = li.strip().split(':HF=')
+    meth = a0.split('/')[0][:-4]
+    si = a0.split('/')[1][:-4]
+    dct[si].update({meth:eval(b)}) # = '%.8f'%()
+
+dct
+

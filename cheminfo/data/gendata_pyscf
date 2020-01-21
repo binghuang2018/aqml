@@ -1,0 +1,19 @@
+#!/usr/bin/env python
+
+import calculators.pscf as pf                                                                                                                
+
+coords = [[0.,0.,0]] 
+
+for zi in [1, 6,7,8,9, 15,16,17, 35]: 
+  si = mcc.chemical_symbols[zi] 
+  dcti = {} 
+  so = "'%s': {"%si 
+  for xc in ['pbe','pbe0','b3lyp','wb97x']: 
+    #print(zi,xc) 
+    obj = pf.molecule( ([zi],coords), basis='def2-tzvp') 
+    e = obj.get_dft_energy('b3lyp') 
+    dcti[si] = e  
+    so += "'%s':%.8f, "%(xc,e) 
+  print(so+"}") 
+  dct.update(dcti) 
+
