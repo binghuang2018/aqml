@@ -21,10 +21,8 @@ Amons-based quantum machine learning for quantum chemistry
 
 
 # Todo's
-1) Remove the dependency of `oechem`
-2) Distored configuration generation on-the-fly for MD 
-   * Use SLATM-derived metric
-3) force prediction using SLATM
+1) Remove the dependency on `ase` and `oechem`
+2) force prediction using SLATM
    * geometry optimization, molecular dynamics
 
 
@@ -38,12 +36,12 @@ Amons-based quantum machine learning for quantum chemistry
 - `scipy`
 - `oechem`: cheminformatic package (need for an academic license, which is free)
 - `rdkit`: cheminformatic package (free)
-- `networkx` a Python package for the creation, manipulation, and study of the structure, dynamics, and functions of complex networks. https://networkx.github.io/documentation/stable/install.html
-- `ase`: Atomic Simulation Environment https://wiki.fysik.dtu.dk/ase/install.html
+- `networkx` a Python package for the creation, manipulation, and study of the structure, dynamics, and functions of complex networks. [https://networkx.github.io/documentation/stable/install.html]
+- `ase`: Atomic Simulation Environment [https://wiki.fysik.dtu.dk/ase/install.html]
 
 
 optional:
-- `dftd3`: 
+- `dftd3`: A dispersion correction for density functionals and other methods [https://www.chemie.uni-bonn.de/pctc/mulliken-center/software/dft-d3/get-the-current-version-of-dft-d3]
 - `imolecule`: draw mol interactively in jupyter-notebook (recommended)
 - `indigo`: cheminformatic package (free)
 - `openbabel`: cheminformatic package (free)
@@ -58,19 +56,19 @@ I recommend using `conda` (for Python 3+) to install all dependencies
 
 Steps
 
-- Install dependencies
+- miniconda or anaconda (go to https://docs.conda.io/projects/conda/en/latest/user-guide/install/ and follow the instructions there. Note that the version Python 3.7 is preferred!)
 
-  - miniconda or anaconda (go to https://docs.conda.io/projects/conda/en/latest/user-guide/install/ and follow the instructions there. Note that the version Python 3.7 is preferred!)
-
-
-  - oechem
-    - apply for an academic license from https://www.eyesopen.com/academic-licensing
+- oechem (first apply for an academic license from https://www.eyesopen.com/academic-licensing) and then
 ```bash
 [macos] pip install -i https://pypi.anaconda.org/openeye/simple openeye-toolkits-python3-osx-x64
 [linux] pip install -i https://pypi.anaconda.org/openeye/simple openeye-toolkits-python3-linux-x64
 ```
+Afterwards, install the license file
+```bash
+echo "export OE_LICENSE=/path/to/oe_license.txt" >>~/.bashrc
+```
 
-  - rdkit
+- rdkit
 ```bash
 conda install -y -c rdkit rdkit 
 ```
@@ -99,7 +97,135 @@ Now you are ready to go!
 # Usage
 
 ## command line
-bin/aqml -h
+
+### aqml
+```bash
+usage: aqml [-h] [-nprocs [NPROCS]] [-bj] [-abc] [-p [P]] [-z [Z]] [-fp [FP]]
+            [-scu [SCU]] [-wd [W0]] [-rcut [RCUT]] [-c [COEFFS [COEFFS ...]]]
+            [-k [KERNEL]] [-cab] [-reusek] [-savek] [-fk [FK]] [-savex]
+            [-reusex] [-fx1 [FX1]] [-fx2 [FX2]] [-train [TRAIN [TRAIN ...]]]
+            [-exclude [_EXCLUDE [_EXCLUDE ...]]] [-keep [_KEEP [_KEEP ...]]]
+            [-l [LAMBDAS]] [-test [TEST [TEST ...]]] [-n2 [N2]] [-i1by1]
+            [-idx1 [_IDX1 [_IDX1 ...]]] [-idx2 [_IDX2 [_IDX2 ...]]]
+            [-iaml [IAML]] [-i2 [I2]] [-add [ADD [ADD ...]]] [-dmxby [DMXBY]]
+            [-ref [REF]] [-iprta] [-ieaq] [-debug]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -nprocs [NPROCS], --nprocs [NPROCS]
+                        Number of threads to be used
+  -bj                   manually add dft-d3 correction to energy?
+  -abc                  manually add ATM correction to energy?
+  -p [P], --property [P]
+                        property to be trained/test
+  -z [Z]                if `p is atomic property, -z [val] must be specified!
+  -fp [FP]              property file. If specified, properties would not be
+                        read from xyz file
+  -scu [SCU]            property to be trained/test
+  -wd [W0]              current working directory, default is "./"
+  -rcut [RCUT], --rcut [RCUT]
+                        SLATM cutoff radius, default is 4.8 Ang
+  -c [COEFFS [COEFFS ...]], -coeffs [COEFFS [COEFFS ...]]
+                        scaling factor for `dmax
+  -k [KERNEL], --kernel [KERNEL]
+                        gaussian or lapalacian
+  -cab
+  -reusek, --reusek
+  -savek, --savek
+  -fk [FK], --fk [FK]   filename of kernel
+  -savex, --savex
+  -reusex, --reusex
+  -fx1 [FX1], --fx1 [FX1]
+                        filename of x1
+  -fx2 [FX2], --fx2 [FX2]
+                        filename of x2
+  -train [TRAIN [TRAIN ...]], --train [TRAIN [TRAIN ...]]
+                        Name of the folder(s) containing all training mols
+  -exclude [_EXCLUDE [_EXCLUDE ...]], -remove [_EXCLUDE [_EXCLUDE ...]], --exclude [_EXCLUDE [_EXCLUDE ...]], --remove [_EXCLUDE [_EXCLUDE ...]]
+                        molecular idxs (for all mols, i.e., including mols
+                        from all training folders) to be excluded for training
+  -keep [_KEEP [_KEEP ...]], --keep [_KEEP [_KEEP ...]]
+                        molecular idxs (in the j-th training folder, where `j
+                        must be specified as a negative integer) to be kept
+                        for training, skip the rest. E.g., "-keep -1 35 40-49
+                        -2 23-25" would keep mols with idx 35, 50-59 in
+                        ag.train[-1] and mols 23-25 in ag.train[-2]!
+  -l [LAMBDAS], -lambda [LAMBDAS], -lambdas [LAMBDAS]
+                        llambdas= 10^{-ls}
+  -test [TEST [TEST ...]], --test [TEST [TEST ...]]
+                        Name of the folder(s) containing all test molecules
+  -n2 [N2], --n2 [N2]   Number of test molecules; must be specified when no
+                        test folder ia avail
+  -i1by1                is training/test to be done 1 by 1?
+  -idx1 [_IDX1 [_IDX1 ...]]
+                        specify training set by idxs of mols
+  -idx2 [_IDX2 [_IDX2 ...]]
+                        specify test set by idxs of mols
+  -iaml [IAML]          use AML?
+  -i2 [I2]              Target mol idx
+  -add [ADD [ADD ...]]  Idx of mols to be added for training, default is []
+  -dmxby [DMXBY]        calc `dmax using amons/target/all?
+  -ref [REF]            folder containing a set of mols for regression of
+                        atomic reference energy
+  -iprta
+  -ieaq                 display energy of atoms in query mol(s)?
+  -debug
+```
+
+
+### genamons
+```bash
+usage: genamon [-h] [-iprt [IPRT]] [-i3d [I3D]] [-iwarn [IWARN]]
+               [-fixgeom [FIXGEOM]] [-imap [IMAP]] [-wg [WG]] [-ra [RA]]
+               [-iextl [IEXTL]] [-debug [DEBUG]] [-nocrowd [NOCROWD]]
+               [-ioc [IOC]] [-iocn [IOCN]] [-icrl2o [ICRL2O]] [-igchk [IGCHK]]
+               [-icpchk [ICPCHK]] [-irddtout [IRDDTOUT]] [-ivdw [IVDW]]
+               [-ivao [IVAO]] [-keepHalogen [KEEPHALOGEN]]
+               [-icc4Rsp3out [ICC4RSP3OUT]] [-iasp2arout [IASP2AROUT]]
+               [-nogc [NOGC]] [-noextra [NOEXTRA]] [-k [K]] [-k2 [K2]]
+               [-opr [OPR]] [-ff [FF]] [-gopt [GOPT]] [-label [LABEL]]
+               [-np [NPROCS]] [-nmaxcomb [NMAXCOMB]] [-thresh [THRESH]]
+               [ipts [ipts ...]]
+
+positional arguments:
+  ipts
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -iprt [IPRT]
+  -i3d [I3D]
+  -iwarn [IWARN]
+  -fixgeom [FIXGEOM]
+  -imap [IMAP]
+  -wg [WG]
+  -ra [RA]
+  -iextl [IEXTL]
+  -debug [DEBUG]
+  -nocrowd [NOCROWD]
+  -ioc [IOC]
+  -iocn [IOCN]
+  -icrl2o [ICRL2O]
+  -igchk [IGCHK]
+  -icpchk [ICPCHK]
+  -irddtout [IRDDTOUT]
+  -ivdw [IVDW]
+  -ivao [IVAO]
+  -keepHalogen [KEEPHALOGEN]
+  -icc4Rsp3out [ICC4RSP3OUT]
+  -iasp2arout [IASP2AROUT]
+  -nogc [NOGC]
+  -noextra [NOEXTRA]
+  -k [K]
+  -k2 [K2]
+  -opr [OPR]
+  -ff [FF]
+  -gopt [GOPT]
+  -label [LABEL]
+  -np [NPROCS], -nproc [NPROCS], -nprocs [NPROCS]
+  -nmaxcomb [NMAXCOMB]
+  -thresh [THRESH]
+```
+
 
 ## python functions
 
@@ -110,7 +236,6 @@ import cheminfo.oechem.amon as coa
 obj = coa.ParentMols(fs)
 a = obj.generate_amons()
 a.cans
-
 ```
 
 # Publications
