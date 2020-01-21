@@ -35,7 +35,7 @@ Amons-based quantum machine learning for quantum chemistry
 - `numpy`
 - `scipy`
 - `oechem`: cheminformatic package (need for an academic license, which is free)
-- `rdkit`: cheminformatic package (free)
+- `rdkit`: cheminformatic package 
 - `networkx` a Python package for the creation, manipulation, and study of the structure, dynamics, and functions of complex networks. [https://networkx.github.io/documentation/stable/install.html]
 - `ase`: Atomic Simulation Environment [https://wiki.fysik.dtu.dk/ase/install.html]
 
@@ -43,10 +43,10 @@ Amons-based quantum machine learning for quantum chemistry
 optional:
 - `dftd3`: A dispersion correction for density functionals and other methods [https://www.chemie.uni-bonn.de/pctc/mulliken-center/software/dft-d3/get-the-current-version-of-dft-d3]
 - `imolecule`: draw mol interactively in jupyter-notebook (recommended)
-- `indigo`: cheminformatic package (free)
-- `openbabel`: cheminformatic package (free)
+- `indigo`: cheminformatic package https://lifescience.opensource.epam.com/indigo/index.html#download-and-install
+- `openbabel`: cheminformatic package http://openbabel.org/wiki/Category:Installation
 - `cairosvg`: convert svg to png, pdf, etc.
-- `deepdish`: hdf5 python library
+- `deepdish`: hdf5 python library 
 
 I recommend using `conda` (for Python 3+) to install all dependencies
 
@@ -72,7 +72,7 @@ echo "export OE_LICENSE=/path/to/oe_license.txt" >>~/.bashrc
 conda install -y -c rdkit rdkit 
 ```
 
-- Clone the repository
+- clone the repository
 
 ```bash
 git clone https://github.com/binghuang2018/aqml.git
