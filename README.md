@@ -7,8 +7,6 @@ Amons-based quantum machine learning for quantum chemistry
 
 *Author:* Bing Huang (University of Basel, Switzerland)
 
-[http://www2.mpip-mainz.mpg.de/~bereau/](http://www2.mpip-mainz.mpg.de/~bereau/)
-
 *Created:* 2019
 
 ***
@@ -23,23 +21,19 @@ Amons-based quantum machine learning for quantum chemistry
 
 
 # Todo's
-1) Distored configuration generation on-the-fly for MD 
+1) Remove the dependency of `oechem`
+2) Distored configuration generation on-the-fly for MD 
    * Use SLATM-derived metric
-2) force prediction using SLATM
+3) force prediction using SLATM
    * geometry optimization, molecular dynamics
   
 Usage
 1) bin/aqml: 
 
 # Publication
-For a detailed account of the implementation, see:
-
-Tristan Bereau, Robert A. DiStasio Jr., Alexandre Tkatchenko, 
-and O. Anatole von Lilienfeld, _Non-covalent interactions across organic and 
-biological subsets of chemical space: Physics-based potentials parametrized 
-from machine learning_, 
-The Journal of Chemical Physics *148*, 241706 (2018); see also [link](https://aip.scitation.org/doi/abs/10.1063/1.5009502)
-
+- "Understanding molecular representations in machine learning: The role of uniqueness and target similarity", B. Huang, OAvL,J. Chem. Phys. (Communication) 145 161102 (2016), arxiv.org/abs/1608.06194
+- "Boosting quantum machine learning models with multi-level combination technique: Pople diagrams revisited" P. Zaspel, B. Huang, H. Harbrecht, OAvL submitted to JCTC (2018) https://arxiv.org/abs/1808.02799
+- "The DNA of chemistry: Scalable quantum machine learning with amons", B. Huang, OAvL, accepted by Nature Chemistry (2020) https://arxiv.org/abs/1707.04146
 
 # Installation
 
