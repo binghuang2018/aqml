@@ -18,8 +18,8 @@ Amons-based quantum machine learning for quantum chemistry
 - BAML representation, including up to 4-body potential (UFF inspired)
 - Multi-fidelity KRR
 - Automatic sampling of training set that are most representative for any query molecule
- - composition and size-independent
- - limited to molecules with explicit graph (w/wo periodic boundary condition)
+   - composition and size-independent
+   - limited to molecules with explicit graph (w/wo periodic boundary condition)
 
 
 # Todo's
