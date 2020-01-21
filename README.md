@@ -5,7 +5,7 @@ Amons-based quantum machine learning for quantum chemistry
 
 ***
 
-*Author:* Bing Huang (University of Basel, Switzerland)
+*Author:* Bing Huang (University of Basel, Switzerland) bing.huang@unibas.ch
 
 *Created:* 2019
 
