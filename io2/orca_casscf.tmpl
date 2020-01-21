@@ -1,0 +1,56 @@
+# ================================================================
+# Orca input file
+# ================================================================
+! UHF {basis} KDIIS VeryTightSCF UseSym
+{procs}
+! MOREAD
+
+%moinp "{moinp}"
+
+%casscf
+  irrep {irrep}
+  nel  {nel}
+  norb {norb}
+  CIStep ice
+  ci
+    TPrintWF 0.00003
+  end
+end
+
+* xyzfile {charge} {multiplicity} ../../../../chem_database/{molecule}.xyz
+
+$new_job
+! {basis} VeryTightSCF
+! MOREAD NOITER
+
+%moinp "casscf.gbw"
+
+%casscf
+  irrep {irrep}
+  nel  {nel}
+  norb {norb}
+  PrintWF det
+  ci
+    TPrintWF 0.00003
+  end
+end
+
+* xyzfile {charge} {multiplicity} ../../../../chem_database/{molecule}.xyz
+
+$new_job
+! {basis} VeryTightSCF
+! MOREAD NOITER
+
+%moinp "casscf.gbw"
+
+%casscf
+  irrep {irrep}
+  nel  {nel}
+  norb {norb}
+  PrintWF csf
+  ci
+    TPrintWF 0.00003
+  end
+end
+
+* xyzfile {charge} {multiplicity} ../../../../chem_database/{molecule}.xyz

@@ -1,0 +1,41 @@
+## Job: Hessian by a coarse/efficient method (meth1), then
+##      geom optg by a more advanced methd
+
+%pal nprocs {nproc} end
+
+! {meth1} #RHF AM1 NumFreq
+
+%base "FirstJob"
+* int {charge} {mult}
+{geom}
+*
+
+%geom
+maxiter 50
+TolRMSG 1e-5
+TolMaxG 1.5e-5
+TolRMSD 4e-5
+TolMaxD 6e-5
+end
+
+$new_job
+# --------------------------------------------------------
+# Now the real job
+# --------------------------------------------------------
+! {meth2} #B3LYP SVP TightSCF PModel
+! Opt
+%base "SecondJob"
+%geom
+
+GDIISMaxEq 20
+UseGDIIS false
+InHess Read
+InHessName "FirstJob.hess"
+# this file must be either a .hess file from a
+# frequency run or a .opt file left over from a
+# previous geometry optimization
+end
+
+* int {charge} {mult}
+{geom}
+*
