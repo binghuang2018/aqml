@@ -35,15 +35,25 @@ Usage
 
 ## Requirements
 
-`ipml` is a python script that requires a number of dependencies:
+`aqml` is a python/fortran package that requires a number of dependencies:
 
-- `numpy`, `scipy`
-- `oechem`, `rdkit`
+- `numpy`
+- `scipy`
+- `oechem`: cheminformatic package (need for an academic license, which is free)
+- `rdkit`: cheminformatic package (free)
+- `networkx` a Python package for the creation, manipulation, and study of the structure, dynamics, and functions of complex networks. https://networkx.github.io/documentation/stable/install.html
+- `ase`: Atomic Simulation Environment https://wiki.fysik.dtu.dk/ase/install.html
+
 
 optional:
-- `dftd3`, 
+- `dftd3`: 
+- `imolecule`: draw mol interactively in jupyter-notebook (recommended)
+- `indigo`: cheminformatic package (free)
+- `openbabel`: cheminformatic package (free)
+- `cairosvg`: convert svg to png, pdf, etc.
+- `deepdish`: hdf5 python library
 
-I recommend using `conda` (for Python 2.7) to install all dependencies
+I recommend using `conda` (for Python 3+) to install all dependencies
 [https://conda.io/docs/user-guide/install/index.html](https://conda.io/docs/user-guide/install/index.html).
 
 Link to the `qml` package:
@@ -53,20 +63,50 @@ documentation: [http://www.qmlcode.org/installation.html](http://www.qmlcode.org
 Make sure you have `git lfs` installed. See documentation
   [https://git-lfs.github.com](https://git-lfs.github.com)
 
-## Install 
+## Build & Install 
 
-Clone the repository
+Steps
+
+- Install dependencies
+
+  - miniconda or anaconda (go to https://docs.conda.io/projects/conda/en/latest/user-guide/install/ and follow the instructions there. Note that the version Python 3.7 is preferred!)
+
+
+  - oechem
+```bash
+[macos] pip install -i https://pypi.anaconda.org/openeye/simple openeye-toolkits-python3-osx-x64
+[linux] pip install -i https://pypi.anaconda.org/openeye/simple openeye-toolkits-python3-linux-x64
+```
+  - rdkit
+```
+conda install -y -c rdkit rdkit ```
+
+- Clone the repository
 
 ```bash
-git clone https://gitlab.mpcdf.mpg.de/trisb/ipml.git
+git clone https://github.com/binghuang2018/aqml.git
 ```
+
+- Build core ML library (mainly fortran code for time-consuming part of compuation)
+```bash
+cd aqml/coreml
+python setup.py install
+```
+
+- Install python codes
+```bash
+cpwd=$PWD
+echo "export PYTHONPATH=$PWD:$PYTHONPATH" >>~/.bashrc
+echo "export PATH=$PWD/bin:$PATH >>~/.bashrc
+source ~/.bashrc```
+
 
 # Usage
 
-## commandline
+## command line
 bin/aqml -h
 
-## python script
+## python functions
 
 ### amons generataion
 ```bash
