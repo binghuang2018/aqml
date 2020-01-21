@@ -262,7 +262,7 @@ If you have used `aqml` in your research, please consider citing these papers:
 
 ```bash
 @article{huang2017dna,
-  title={The" DNA" of chemistry: Scalable quantum machine learning with" amons"},
+  title={The ``DNA'' of chemistry: Scalable quantum machine learning with ``amons''},
   author={Huang, Bing and von Lilienfeld, O Anatole},
   journal={arXiv preprint arXiv:1707.04146},
   year={2017}
@@ -275,7 +275,8 @@ If you have used `aqml` in your research, please consider citing these papers:
   number={3},
   pages={1546--1559},
   year={2018},
-  publisher={ACS Publications}
+  publisher={ACS Publications},
+  doi = {https://doi.org/10.1021/acs.jctc.8b00832}
 }
 @article{BAML,
    author = "Huang, Bing and von Lilienfeld, O. Anatole",
@@ -287,7 +288,6 @@ similarity",
    number = "16",
    eid = 161102,
    pages = "",
-   url = "http://scitation.aip.org/content/aip/journal/jcp/145/16/10.1063/1.4964627",
    doi = "http://dx.doi.org/10.1063/1.4964627"
 }
 
