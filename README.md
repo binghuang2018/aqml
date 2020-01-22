@@ -255,8 +255,8 @@ cans= ['C', 'C=C', 'C=CC=C', 'CC=C', 'CC(=C)C=C', 'CC=CC=C', 'c1ccccc1']
 
 ### amons generataion
 ```bash
-import cheminfo.oechem.amon as coa
 
+>>> import cheminfo.oechem.amon as coa
 >>> li = ['Cc1ccccc1']
 >>> obj = coa.ParentMols(li, k=5, i3d=F)
 >>> a = obj.generate_amons()
