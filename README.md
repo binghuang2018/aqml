@@ -183,7 +183,6 @@ optional arguments:
                         the test mol
   -ieaq                 display energy of atoms in query mol(s)?
   -debug                debug the code
-
 ```
 
 
@@ -237,61 +236,16 @@ optional arguments:
                         amons as well)
   -ivao                 generate vdw amons only
   -keepHalogen          keep H-X mol as amons, where X=halogen atom
-usage: genamon [-h] [-k [K]] [-k2 [K2]] [-opr [OPR]] [-ff [FF]] [-gopt [GOPT]]
-               [-label [LABEL]] [-np [NPROCS]] [-nmaxcomb [NMAXCOMB]]
-               [-thresh [THRESH]] [-saveg] [-reuseg] [-i3d] [-verbose]
-               [-iwarn] [-ra] [-iextl] [-debug] [-fixgeom] [-iflexout] [-ivdw]
-               [-ivao] [-keepHalogen]
-               [ipts [ipts ...]]
+```
 
-positional arguments:
-  ipts                  SMILES strings or sdf/mol/pdb files
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -k [K]                size of covalent amons. Default: 7
-  -k2 [K2]              size of vdw amons. Default: 7
-  -opr [OPR]            specify the size of amons to be generated. E.g., "-opr
-                        .le. -k 5" generates amons with no more than 5 heavy
-                        atoms (excluding hydrogen atoms)
-  -ff [FF]              forcefield to be used for geometry optimization.
-                        Default: mmff94
-  -gopt [GOPT]          initial geometry optimizer. Default: rkff, i.e.,
-                        forcefield methods in rdkit
-  -label [LABEL]        label for the output amons, to be used as filename if
-                        ouput option is desired. Default: "auto", i.e., label
-                        is automatically determined based on the input
-                        options.
-  -np [NPROCS], -nproc [NPROCS], -nprocs [NPROCS]
-                        number of processes to be used. Default: 1
-  -nmaxcomb [NMAXCOMB]  number of max combinations of covalent amons for vdw
-                        amons, Default: 3
-  -thresh [THRESH]      Given a new amon conformer, if the CM-based distances
-                        between this amon and all other conformers are greater
-                        than the threshold value, then it is accepted as a new
-                        amon conformer. Default: 0.01
-  -saveg                save calculated mol graph, path lengths for target mol
-  -reuseg               load g, pls from previously saved graph file
-  -i3d                  input contains 3d geometry
-  -verbose              print detailed outputs of the program
-  -iwarn                print warning message
-  -ra                   reduce number of amons (full geom opt by ff), default:
-                        F
-  -iextl                include extended larger amons (N_I>7), default: F
-  -debug                debug the code
-  -fixgeom              generate satic amons, default: F
-  -iflexout             remove flexible amons
-  -ivdw                 turn on non-covalent interaction (i.e., generate vdw
-                        amons as well)
-  -ivao                 generate vdw amons only
-  -keepHalogen          keep H-X mol as amons, where X=halogen atom
-```bash
 
 Example:
 
+```bash
 genamon -k 6 -i3d F -verbose 0 "Cc1ccccc1"
 ```
 produces 7 unique canonical SMILES (oechem standard)
+
 ```bash
 cans= ['C', 'C=C', 'C=CC=C', 'CC=C', 'CC(=C)C=C', 'CC=CC=C', 'c1ccccc1']
 ```
