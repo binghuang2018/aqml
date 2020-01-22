@@ -241,14 +241,48 @@ optional arguments:
 
 Example:
 
+1) Amons with molecular graph only if input is mol graph
+
 ```bash
-genamon -k 6 -i3d F -verbose 0 "Cc1ccccc1"
+  $ genamon -k 6 "Cc1ccccc1"
 ```
 produces 7 unique canonical SMILES (oechem standard)
 
 ```bash
 cans= ['C', 'C=C', 'C=CC=C', 'CC=C', 'CC(=C)C=C', 'CC=CC=C', 'c1ccccc1']
 ```
+
+2) Amons with 3d geometry if the input contains 3d coords
+```bash
+  $ genamon -k 6 -i3d test/phenol.sdf
+```
+gives the following output
+```bash
+...
+ ++ found 16 cov amons
+ cans= ['O', 'C=C', 'C=CC=C', 'c1ccccc1', 'C=CO', 'C=CC(=C)O', 'C=CC=CO']
+ size of maps:  (10, 3)
+-- time elaped:  0.33088088035583496  seconds
+```
+and a file `g6.out` summarizing the generated amons
+```bash
+ amons are to be written to g6
+ ++ 1 000001/000007                                                            O   1
+ ++ 2 000002/000007                                                          C=C   1
+ ++ 3 000003/000007                                                         C=CO   2
+ ++ 4 000004/000007                                                       C=CC=C   1
+ ++ 5 000005/000007                                                    C=CC(=C)O   2
+ ++ 5 000006/000007                                                      C=CC=CO   2
+ ++ 6 000007/000007                                                     c1ccccc1   1
+ ## summary: found 7 molecular graphs, 10 configurations
+```
+and a folder `g6/` containing the following files:
+```bash
+frag_1_c00001.sdf  frag_3_c00002.sdf  frag_5_c00002.sdf  frag_7_c00001.sdf
+frag_2_c00001.sdf  frag_4_c00001.sdf  frag_6_c00001.sdf  i-raw/
+frag_3_c00001.sdf  frag_5_c00001.sdf  frag_6_c00002.sdf  map.h5
+```
+As one can see from above, filenames are of format `frag_[digit(s)]_c[digits].sdf` with the first entry of digits being the numbering of mol graphs, while the second entry corresponds to the numbering of associated conformers for each mol graph.
 
 
 ## python functions
