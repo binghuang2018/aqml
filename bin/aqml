@@ -1,0 +1,937 @@
+#!/usr/bin/env python
+
+import numpy as np
+import cheminfo.core as cc
+import itertools as itl
+import io2, os, sys, re, time
+#from ase import Atom, Atoms
+import cml.distance as cmld
+import cml.kernels as cmlk
+from cml.representations import generate_slatm
+import cheminfo as co
+from cheminfo.rw.xyz import *
+import argparse as ap
+import deepdish as dd
+import multiprocessing as mt
+import representation.slatm_x as sl
+
+T, F = True, False
+
+
+
+
+uc = io2.Units()
+
+class atoms(object):
+    def __init__(self, f, pns=None, unit='h'):
+        nas, zs, coords, nsheav, props = read_xyz_simple(f, opt='z', property_names=pns)
+        self.coords = np.array(coords)
+        self.na = nas[0]
+        self.nheav = nsheav[0]
+        #print('pn=',pns, props.keys())
+        const = 1. 
+        if unit in ['h']: const = io2.Units().h2kc
+        self.y = props[pns[0]] * const
+        self.zs = np.array(zs, dtype=int)
+
+
+class molecules(object):
+    def __init__(self, fs, pns=None, unit='h'):
+        nas = []; zs = []; coords = []; nsheav = []; props = {}
+        self.nm = len(fs)
+        const = 1. 
+        if unit in ['h']: const = io2.Units().h2kc
+        for f in fs:
+            _nas, _zs, _coords, _nsheav, _props = read_xyz_simple(f, opt='z', property_names=pns)
+            #print('f,props=',f, _props)
+            nas += list(_nas)
+            zs += list(_zs)
+            coords += list(_coords)
+            nsheav += list(_nsheav)
+            for k in _props:
+                if k in props:
+                    props[k] += [ _props[k] * const ]
+                else:
+                    props[k] = [ _props[k] * const ]
+        self.nas = nas
+        self.zs = zs
+        self.coords = coords
+        self.nsheav = nsheav
+        self.props = props
+        self.ias2 = np.cumsum(nas)
+        self.ias1 = np.concatenate(([0],self.ias2[:-1]))
+
+    @property
+    def ys(self):
+        if not hasattr(self, '_ys'):
+            pns = list(self.props.keys())
+            self._ys = np.array(self.props[pns[0]])
+        return self._ys
+
+    @property
+    def zsu(self):
+        if not hasattr(self, '_zsu'):
+            self._zsu = np.unique(self.zs)
+        return self._zsu
+
+    @property
+    def namax(self):
+        """ maximal number of heavy atoms of molecules """
+        return np.max(self.nsheav)
+
+    @property
+    def zmax(self):
+        return np.max(self.zs)
+
+    @property
+    def nzs(self):
+        if hasattr(self, '_nzs'):
+            nzs = self._nzs
+        else:
+            nzs = self.get_nzs()
+        return nzs
+
+    def get_nzs(self):
+        nzs = []
+        nm = len(self.nas)
+        for i in range(nm):
+            ib, ie = self.ias1[i], self.ias2[i]
+            zsi = self.zs[ib:ie]
+            nzsi = []
+            for zi in self.zsu:
+                nzsi.append( (zsi==zi).sum() )
+            nzs.append(nzsi)
+        return np.array(nzs, dtype=int)
+
+
+def get_reference_atomic_energy(ref, meth, zs=None):
+    """ get reference atomic energy from a set of mols
+    located under directory `ref
+    """
+    fs = io2.cmdout('ls %s/*.xyz'%ref)
+    ms = molecules(fs, [meth])
+    #print('fs=',fs,'ms=',ms.props)
+    esb,_,rank,_ = np.linalg.lstsq(ms.nzs, ms.props[meth], rcond=None)
+    dct = np.zeros((ms.zsu[-1]+1))
+    for i,zi in enumerate(ms.zsu):
+        dct[zi] = esb[i]
+    if zs is None:
+        return dct
+    return dct[zs]
+
+def calc_ae_dressed(obj, idx1, idx2, meth=None, ref=None):
+    ims = np.arange(obj.nm)
+    ns1, ns2 = obj.ngs[idx1], obj.ngs[idx2]
+    nel = len(ns1[0]) # number of elements
+    if meth is None:
+        pns = obj.property_names
+        assert len(pns)==1, '##ERROR: plz specify `meth'
+        meth = pns[0]
+    ys = obj.ys
+    ys1, ys2 = ys[idx1], ys[idx2]
+    rank = np.linalg.matrix_rank(ns1)
+    istat = T
+    if ref is None:
+        if rank < nel:
+            #print( ' ** insufficient rank, i.e., effective mols .le. number of elements' )
+            # that is, lstsq won't be effective
+            if rank==1: # e.g., water clusters, i.e., (H2O)_N
+                ns1 = ns1[:,:1]
+                ns2 = ns2[:,:1]
+                esb,_,rank,_ = np.linalg.lstsq(ns1,ys1,rcond=None)
+            else:
+                istat = F 
+                esb = np.zeros(nel)
+        else:
+            esb,_,rank,_ = np.linalg.lstsq(ns1,ys1,rcond=None)
+    else:
+        esb = get_reference_atomic_energy(ref, meth, obj.zsu)
+    ys1p = np.dot(ns1,esb)
+    #print ' +++++ ys1.shape, ys1p.shape = ', ys1.shape, ys1p.shape
+    dys1 = ys1 - ys1p
+    ys2_base = np.dot(ns2,esb)
+    dys2 = ys2 - ys2_base
+    return istat, dys1, dys2, ys2_base
+
+
+class fobj(object):
+
+    """ function object """
+
+    def __init__(self, kernel, local=T):
+
+        self.kernel = kernel
+
+        if self.kernel[0] == 'g':
+            self.d = cmld.l2_distance
+            self.k = cmlk.get_local_kernels_gaussian if local else cmlk.gaussian_kernels
+            self._factor = 1./np.sqrt(2.0*np.log(2.0))
+        elif self.kernel[0] == 'l':
+            self.d = cmld.manhattan_distance
+            self.k = cmlk.get_local_kernels_laplacian if local else cmlk.laplacian_kernels
+            self._factor = 1./np.log(2.0)
+        else:
+            raise Exception('#ERROR: not supported!')
+
+
+def get_kernel_width(nas, zs, x, cab=F, kernel='g', itarget=F, debug=F):
+    zsu = np.unique(zs)
+    ias2 = np.cumsum(nas); ias1 = np.concatenate(([0],ias2[:-1]))
+    nat = sum(nas)
+    iast = np.arange(nat)
+    dct = iast.copy()
+    dct2 = iast.copy()
+    for i,nai in enumerate(nas):
+        ib, ie = ias1[i], ias2[i]
+        dct[ib:ie] = i
+        dct2[ib:ie] = np.arange(nai)
+    Nz = len(zsu)
+    zmax = zsu[-1]
+    #print('    +++++ nas =',nas)
+    fun = fobj(kernel)
+    if Nz == 1:
+        ds = fun.d(x,x)
+        dsmax = np.array([np.max(ds)]*Nz)
+    else: # Nz == 2:
+        if cab:
+            filt1 = (zs == zsu[-2]); filt2 = (zs == zsu[-1])
+            ds = fun.d(x[filt1,:],x[filt2,:])
+            dsmax = np.array([np.max(ds)]*Nz)
+        else:
+            # one dmax per atom type
+            dsmax = []
+            for i in range(Nz):
+                # `i starts from 1 instead of 0 (i.e., 'H' atom) due to that
+                # d(H,X) << d(X,X'), where X stands for any heavy atom
+                filt = (np.array(zs) == zsu[i])
+                xi = x[filt] 
+                ias = iast[filt]; 
+                #print('xi.shape=', xi.shape)
+                _ds = fun.d(xi,xi)
+                dmax_i = np.max(_ds)
+                loc = np.array(np.where(dmax_i==np.triu(_ds)), dtype=int).T
+                if debug:
+                    print('  i,zi = ', i, zsu[i])
+                for rci in loc:
+                    ir0,ic0 = rci; ir,ic = ias[ir0],ias[ic0]
+                    if debug:
+                        print('  dmin is associated with  ', 'atom 1: im,ia=', dct[ir]+1,dct2[ir]+1, ', atom 2: im,ia=', dct[ic]+1,dct2[ic]+1)
+                #print('zi,dmax=',zsu[i],dmax_i)
+                dsmax.append(dmax_i)
+            dsmax = np.array(dsmax)
+    dso = np.ones(zmax) * 1.e-9 # in Fortran, first entry: 1
+    for i,zi in enumerate(zsu):
+        dso[zi-1] = dsmax[i]
+    print('    dsmax=', dict(zip(zsu,dsmax)))
+    #print('dso=',dso)
+    return dso
+
+
+def calc_ka(x2, x1, zs2, zs1, nas2, nas1, cab, zmax, sigmas, zaq=None, kernel='g'):
+    """
+    calculate atomic kernel matrix 
+
+    vars
+    ============
+    zq: if set to None, then all pairwise atomic kernel elements are calc
+        otherwise, only the kernel matrix elements corresponding to atoms
+        with the specified `za are computed. 
+    """
+    nsg = len(sigmas)
+    n1 = len(nas1); n2 = len(nas2)
+    na1 = len(zs1); na2 = len(zs2)
+
+    zs2 = np.array(zs2)
+    zs1 = np.array(zs1)
+
+    fun = fobj(kernel)
+
+    if cab:
+        raise Exception('??')
+    else:
+        iamap2 = np.cumsum(nas1)
+        iamap1 = np.concatenate(([0], iamap2[:-1]))
+        iast1 = np.arange(na1); iast2 = np.arange(na2)
+        iac = T # calculate atomic contribution
+        if zaq is None:
+            ks = np.zeros((nsg,na2,n1))
+            ksa = np.zeros((nsg,na2,na1))
+            zsu = np.unique(zs2)
+        else:
+            iac = F
+            ksa = np.zeros((nsg, (zaq==zs2).sum(), (zaq==zs1).sum()))
+            zsu = [zaq]
+
+        for zi in zsu:
+            ias1 = iast1[zs1==zi]; ias2 = iast2[zs2==zi]
+            ds = fun.d(x2[ias2], x1[ias1])
+            ksi = np.array([ np.exp( -0.5 * (ds/sigmasi[zi-1])**2) for sigmasi in sigmas ])
+            if iac:
+                for i2,ia2 in enumerate(ias2):
+                    for i1,ia1 in enumerate(ias1):
+                        ksa[:, ia2, ia1] = ksi[:, i2, i1]
+            else:
+                ksa = ksi
+        if iac:
+            for i in range(n1):
+                ib = iamap1[i]; ie = iamap2[i]
+                ks[:,:,i] = np.sum(ksa[:,:,ib:ie], axis=2)
+        else:
+            ks = ksa
+    return ks
+
+
+def get_slatm_mbtypes(zsu, nzs):
+    """ get slatm many-body types"""
+    nzs = np.max(nzs, axis=0)
+    boas = [ [zi,] for zi in zsu ]
+    bops = [ [zi,zi] for zi in zsu ] + list( itl.combinations(zsu,2) )
+    bots = []
+    for i in zsu:
+        for bop in bops:
+            j,k = bop
+            tas = [ [i,j,k], [i,k,j], [j,i,k] ]
+            for tasi in tas:
+                if (tasi not in bots) and (tasi[::-1] not in bots):
+                    nzsi = [ (zj == np.array(tasi)).sum() for zj in zsu ]
+                    if np.all(nzsi <= nzs):
+                        bots.append( tasi )
+    mbtypes = boas + bops + bots
+    #nsx = np.array([len(mb) for mb in [boas,bops,bots]],np.int)
+    #ins2 = np.cumsum(nsx)
+    #ins1 = np.array([0,ins2[0],ins2[1]],np.int)
+    return mbtypes
+
+def toidxs(li):
+    """ input = ['1', '2-3', '12-16'] (absolute idx)
+     -> output: [0, 1,2, 11,12,13,14,15] (Python idx) """
+    li2 = []
+    for idx in li:
+        if '-' in idx:
+            ib, ie = idx.split('-') # input mol idx starts from 1
+            for j in range(int(ib)-1,int(ie)):
+                if j not in li2:
+                    li2.append(j)
+        else:
+            j = int(idx)-1
+            if j not in li2:
+                li2.append(j)
+    return li2
+
+
+def varparser(ipt):
+    ps = ap.ArgumentParser()
+
+    if isinstance(ipt,str):
+        ipt = ipt.split()
+
+    ps.add_argument('-nprocs', '--nprocs', nargs='?', type=int, help='Number of threads to be used')
+
+    ps.add_argument('-bj', dest='bj', action='store_true', help='manually add dft-d3 correction to energy?')
+    ps.add_argument('-abc', dest='abc', action='store_true', help='manually add ATM correction to energy?')
+
+    ps.add_argument('-p', '--property', dest='p', nargs='?', type=str, help='property to be trained/test')
+    ps.add_argument('-z', dest='z', nargs='?', type=int, help='if `p is an atomic property, this option must be specified!')
+    ps.add_argument('-fp', dest='fp', nargs='?', type=str, help='property file. If specified, properties would not be read from xyz file')
+
+    ps.add_argument('-scu', dest='scu', nargs='?', type=str, default='atom', help='the smallest constituting unit of a mol. Defaulted to "atom", the other option is "group"')
+    ps.add_argument('-wd', dest='w0', nargs='?', default='./', type=str, help='current working directory, default is "./"')
+    
+    ps.add_argument('-rcut','--rcut', nargs='?', default=4.8, type=float, help='SLATM cutoff radius, default is 4.8 Ang')
+    ps.add_argument('-c','-coeffs', dest='coeffs', nargs='*', type=str, default=['1.0'], help='scaling factor for `dmax ')
+
+    ps.add_argument('-k', '--kernel', dest='kernel', nargs='?', default='g', help='gaussian or lapalacian')
+    ps.add_argument('-cab', action='store_true', help='calc atomic kernel between dissimilar atoms')
+    ps.add_argument('-reusek','--reusek', dest='reusek', action='store_true', help=' (optional) load kernel from existing kernel file?')
+    ps.add_argument('-savek','--savek', dest='savek', action='store_true', help=' (optional) save kernel or not?')
+    ps.add_argument('-fk','--fk', dest='fk', type=str, nargs='?', help=' (optional) the file to which calculated kernel is to be saved')
+    ps.add_argument('-savex','--savex', dest='savex', action='store_true')
+    ps.add_argument('-reusex','--reusex', dest='reusex', action='store_true')
+    ps.add_argument('-fx1','--fx1', dest='fx1', type=str, nargs='?', help=' (optional) filename of x_train (x: mol representation')
+    ps.add_argument('-fx2','--fx2', dest='fx2', type=str, nargs='?', help=' (optional) filename of x_test (x: mol representation')
+
+    ps.add_argument('-train','--train', nargs='*', type=str, help='Name of the folder(s) containing all training mols')
+
+    ps.add_argument('-exclude','-remove','--exclude','--remove', dest='_exclude', nargs='*', type=str, help='molecular idxs (for all mols, i.e., including mols from all training folders) to be excluded for training')
+    ps.add_argument('-keep','--keep', dest='_keep', nargs='*', type=str, help='molecular idxs (in the j-th training folder, where `j must be specified as a negative integer) to be kept for training, skip the rest. E.g., "-keep -1 35 40-49 -2 23-25" would keep mols with idx 35, 50-59 in ag.train[-1] and mols 23-25 in ag.train[-2]!')
+
+    ps.add_argument('-l', '-lambda', '-lambdas', dest='lambdas', nargs='?', type=str, default='4.0', help='regularization parameter, Default: 4. Multiple values is possible through the string format of "4,8,10" and corresponding lambdas to be used are [10^{-n} for n in [4,8,10]]')
+
+    ps.add_argument('-test', '--test', nargs='*', type=str, help='Name of the folder(s) containing all test molecules')
+    ps.add_argument('-n2', '--n2', nargs='?', type=int, help='Number of test molecules; must be specified when no test folder ia avail')
+    ps.add_argument('-i1by1', action='store_true', help='is training/test to be done 1 by 1?')
+    ps.add_argument('-idx1', nargs='*', dest='_idx1', type=str, help='specify training set by idxs of mols')
+    ps.add_argument('-idx2', nargs='*', dest='_idx2', type=str, help='specify test set by idxs of mols')
+    ps.add_argument('-iaml', dest='iaml', nargs='?', default='T', type=str, help='use AML?')
+    ps.add_argument('-i2', dest='i2', nargs='?', type=int, help='Target mol idx')
+    ps.add_argument('-add', nargs='*', default=[], type=int, help='Idx of mols to be added for training, default is []')
+    ps.add_argument('-dmxby', nargs='?', default='a', type=str, help='calc `dmax using amons/target/all?')
+    ps.add_argument('-ref', nargs='?', type=str, help='folder containing a set of mols for regression of atomic reference energy')
+    ps.add_argument('-iprta', action='store_true', help=' print predicted properties vs ref. values for each of the test mol')
+
+    ps.add_argument('-ieaq', dest='i_disp_eaq', action='store_true', help='display energy of atoms in query mol(s)?')
+
+    #ipt = '--wd %s --train %s --test %s -p %s'
+    ps.add_argument('-debug', action='store_true', help='debug the code')
+    ag = ps.parse_args(ipt) # sys.argv[1:] )
+    
+    if ag.nprocs is None:
+        ag.nprocs = mt.cpu_count()
+
+    info = ''
+    #for key in ['train',]:
+    if ag.train is None:
+        info += ' --%s is missing\n'%key
+    if info != '':
+        print(info)
+        raise Exception('Please comply!')
+
+    exclude = []   
+    nr = 0
+    if ag._exclude:
+        exclude = toidxs(ag._exclude)
+        nr = 1
+        if ag.debug:
+            print(' idx of mols to be removed:', exclude)
+    ag.exclude = list(set(exclude))
+
+    dirsk = []; idxsk = [] #keep = [] ##### aaaa
+    nk = 0
+    if ag._keep:
+        # first find id's of training dirs (specified as negative integer)
+        nk = 1
+        iis = []
+        for i,si in enumerate(ag._keep):
+            if si[0] == '-':
+                iis.append(i)
+                dirsk.append( int(si) )
+        #print('dirsk=',dirsk, 'iis=',iis, 'keep=',ag._keep)
+        ni = len(iis)
+        iis.append( len(ag._keep) )
+        for j in range(ni):
+            jb = iis[j]+1
+            je = iis[j+1]
+            #print('  j=',j, 'raw=', ag._keep[jb:je])
+            idxsk.append( toidxs(ag._keep[jb:je]) )
+        if ag.debug: 
+            for ik,dk in enumerate(dirsk):
+                print(' in folder %s, only these mols are to be kept:'%(ag.train[dk]), idxsk[ik], '(mol idx starts from 1)' )
+    ag.dirsk = dirsk
+    ag.idxsk = idxsk
+
+    if nk and nr:
+        raise Exception(' -keep [...] and -exclude [...] cannot coexist!!')
+
+    if ag.test is None:
+        ag.iaml = 'F'
+        if ag.n2 is not None:
+            ag.idx1 = []
+            ag.idx2 = np.arange(1,1+ag.n2)[::-1] * (-1)
+        elif ag._idx2 is not None:
+            assert ag._idx1 is not None, ' when "-idx2 {int}" is present, so should "-idx1 {int}"'
+        else:
+            raise Exception('#ERROR: For the case of no -test option being specified, "-n2 [INT]" or "-idx2 {INT}" must be present!')
+        ag.test = None
+
+    if ag.fk:
+        ag.reusek = T
+
+    if ag.fx1 or ag.fx2:
+        ag.reusex = T
+
+    dct0 = {'T': T, 'F': F}
+    ag.iaml = dct0[ag.iaml]
+    return ag 
+
+
+def glc(ipt):
+    
+    ag = varparser(ipt)
+    rcut = ag.rcut
+    fs = []
+    _fs1 = []; n2 = 0
+    w0 = ag.w0
+    if ag.w0 in ['.', './', '']:
+        w0 = '' #ag.w0 + '/' 
+    nfd = len(ag.train)
+    for i,_wd in enumerate(ag.train):
+        wd = _wd if _wd[-1] != '/' else _wd
+        print('_wd=',_wd)
+        #if not os.path.exists(w0+wd):
+        #    try:
+        #        wd += '_extl/'
+        #        assert os.path.exists(w0+wd)
+        #    except:
+        #        raise Exception('#ERROR: either %s or %s does not exist'%(w0+_wd, w0+wd))
+        _fsi = io2.cmdout('ls %s%s/*.xyz'%(w0,wd))
+        #print('fsi=',_fsi)
+        if len(_fsi) == 0:
+            print(' ** folder %s is empty'%wd)
+            continue
+
+        ii = i-nfd
+        if ii in ag.dirsk: ### aaaa
+            fsi = [ _fsi[ik] for ik in ag.idxsk[ii] ]
+        else:
+            fsi = _fsi
+
+        _fs1 += fsi
+
+    fs = _fs1
+    n1t = len(_fs1)
+
+    fmap = None 
+    print('test=',ag.test)
+    if ag.test is not None:
+        fs2 = []
+        for wd in ag.test:
+            fsi = io2.cmdout('ls %s%s/*.xyz'%(w0,wd))
+            assert len(fsi) > 0
+            fs2 += fsi
+        n2 = len(fs2)
+        assert n2>0, '#ERROR: no xyz files found in target folder'
+        fs += fs2
+        if n2>1: 
+            fmap = ag.train[0]+'/map.h5'
+        fs1 = _fs1
+    else:
+        print('n2 = ', ag.n2)
+        if ag.n2 is not None: #len(ag._idx1)==0:
+            fs1 = _fs1[:-ag.n2]
+            fs = _fs1  
+        else:
+            idx1 = toidxs(ag._idx1)
+            fs1 = [ _fs1[i1] for i1 in idx1 ]
+            n1t = len(fs1)
+            idx2 = toidxs(ag._idx2)
+            fs2 = [ _fs1[i2] for i2 in idx2 ]
+            fs = fs1 + fs2
+            n2 = len(idx2) #n2
+
+    if ag.p is None:
+        # not explicitely given by user, then detect it from input file
+        l2 = open(fs[0]).readlines()[1]
+        ps = [ si.split('=')[0] for si in l2.split() ]
+        if len(ps) > 1:
+            print(' Property list: ', ps )
+            raise Exception('#ERROR: pls specify one property!')
+        print('    set property to "%s"'% ps[0])
+        ag.p = ps[0]
+
+    unit = 'h'
+
+    nm = len(fs)
+
+    loops = 1
+    maps = None 
+    if ag.iaml:
+        if n2==1:
+            maps = np.array([np.arange(nm-1)], dtype=int)
+        elif n2>1: # read map file
+            if fmap and os.path.exists(fmap):
+                loops = n2
+                print('    ** found `fmap file: %s, use query-specific amons as training set'%fmap)
+                _dt = dd.io.load(fmap)
+                maps = _dt['maps']
+            else:
+                print(' ** no `fmap file specified, use all mols with idx ranging from 0 to nm-n2 as a single training set')
+                if ag.i1by1:
+                    loops = n2
+                else:
+                    loops = 1
+    else:
+        if ag.i1by1:
+            loops = n2
+
+    res = {}
+
+
+    iap = F
+    if ag.p in ['nmr','chgs','cls','force']:
+        iap = T
+        assert ag.z is not None, '#ERROR: in case of atomic property, "-z [val]" must be specified'
+
+    isimple = F
+    if iap:
+        isimple = T
+
+    os.environ['OMP_NUM_THREADS'] = "%d"%ag.nprocs
+
+    for l in range(loops):
+
+        if maps is None:
+            n1 = n1t
+            if ag.i1by1:
+                fsi = fs1 + fs2[l:l+1]
+                print('i=',n1+l+1) #, 'n1=',n1) #, 'idx1=[%s]'%(','.join(['%d'%(ix+1) for ix in idx])), ' idx2=',[n1t+l+1])
+            else:
+                fsi = fs
+        else:
+            _idx = maps[l]
+            idx1 = list( _idx[_idx>-1] )
+            if ag.i2:
+                if l+1 != ag.i2:
+                    continue
+                idx1 += [ ia-1 for ia in ag.add ]
+            idx = list(set(idx1).difference(set(ag.exclude)))
+            idx.sort() 
+            n1 = len(idx)
+            fsi = [ fs[_] for _ in idx + [n1t+l] ]
+            print('i=',l+1, 'n1=',n1)
+            if ag.iprta:
+                print('idx1=[%s]'%(','.join(['%d'%(ix+1) for ix in idx])), ' idx2=',[n1t+l+1])
+
+        if ag.debug: 
+            comm = list( set(idx1).intersection(set(ag.exclude)) )
+            print('    deleted mols:', np.array(comm,dtype=int)+1)
+            print('    final training mols:', fs)
+
+
+        ms = [ atoms(f,[ag.p],unit=unit) for f in fsi ]
+        nml = len(fsi)
+        ims = np.arange(nml)
+        ims1 = ims[:n1]
+        ims2 = ims[n1:]
+
+        const = {'h': uc.h2kc}[unit]
+        if ag.p not in ['nmr','alpha','chgs','cls']:
+            const = 1.0
+
+        if ag.fp is None:
+            obj = cc.molecules(fsi, [ag.p], unit=unit, isimple=isimple)
+            ys = obj.ys; #print('ys=',ys)
+        else:
+            obj = cc.molecules(fsi) #, [ag.p], unit=unit)
+            p = ag.fp[:-4]
+            ys = np.loadtxt(ag.fp) * const # use filename as property name
+
+
+        if ag.bj:
+            ifd = F
+            for xc in ['pbe','b3lyp',]:
+                if xc in p:
+                    if xc in ['b3lyp',]:
+                        fun = {'b3lyp':'b3-lyp'}[xc]
+                    else:
+                        fun = xc
+                    ifd = T
+                    break
+            assert ifd, '#ERROR: xc not identified!'
+            print('    calc dftd3, xc=', fun)
+            es_disp = obj.calc_dftd3_energy(xc=fun, iabc=ag.abc, nprocs=ag.nprocs) * const
+            print('    disp shape:', np.array(es_disp).shape)
+            ys += np.array([es_disp]).T
+            print('    disp corr done')
+        assert len(ys) == obj.nm
+        obj.props[ag.p] = ys
+
+        obj.set_scu(ag.scu) #'group')
+        #print('scu=', ag.scu, 'scus=',obj.ngs)
+        zsu = obj.zsu
+        nzs = obj.nzs
+        nas = obj.nas
+        zs = obj.zs
+        zmax = np.max(zs)
+        ys = np.array(obj.props[ag.p])
+        #obj.ys = ys
+ 
+        # Assume 'qm7' is a list of Compound() objects.
+        mbtypes = get_slatm_mbtypes(zsu, nzs)
+        #print('mbtypes = ', mbtypes)
+ 
+        cab=ag.cab
+        dgrids = [0.04,0.04]; widths = [0.05,0.05]
+
+        # now x1 (training set)
+        fn1 = ag.train[0]
+        if fn1[-1] == '/': fn1 = fn1[:-1]
+        if ag.rcut != 4.8:
+            fn1 += '-rc%.1f'%ag.rcut
+
+        if iap:
+            fn1 += '-z%d'%ag.z
+
+        fx1 = fn1 + '-x1.npz'
+        zs1=[]; nas1=[]; nhvs1=[]
+        for i in ims1:
+            zs1 += list(ms[i].zs)
+            nas1 += [ms[i].na]
+            nhvs1 += [ms[i].nheav]
+        namax = np.max(nhvs1)
+        fn2 = ag.test[0]
+        if fn2[-1] == '/': fn2 = fn2[:-1]
+
+        if ag.rcut != 4.8:
+            fn2 += '-rc%.1f'%ag.rcut
+
+        if iap:
+            fn2 += '-z%d'%ag.z
+
+        fx2 = fn2 + '-x2.npz'
+        zs2=[]; nas2=[]; nhvs2=[]
+        for i in ims2:
+            mi = ms[i]
+            zs2 += list(mi.zs)
+            nas2 += [mi.na]
+            nhvs2 += [mi.nheav]
+        nas = nas1 + nas2
+        fk = fn1 + '-kernels%s.npz'%( {'g':'', 'l':'-l'}[ag.kernel[0]] )
+
+        debug = ag.debug
+
+        coeffs = []
+        i_atom_specific = F 
+        try:
+            sc = ag.coeffs[0] # ag.coeffs = ['1.0,2.0'], i.e., scale dmax by the same factor!
+            coeffs = [ eval(ci) for ci in sc.split(',') ]
+        except:
+            i_atom_specific = T 
+            zsc = []
+            ysc = []
+            for i, si in enumerate(ag.coeffs): # ag.coeffs = ['H,1.0', 'C,2.0',], i.e., different atom, different scaling of `dmax
+                s2 = si.split(',')
+                zsc.append( co.chemical_symbols_lowercase.index( s2[0] ) )
+                ysc.append( [ eval(vi) for vi in s2[1:] ] )
+            tuples = list(itl.product(*ysc))
+            nzc = len(zsc)
+            #print(zsc)
+            for t in tuples:
+                #print(t)
+                sigmas_i = dsmax.copy()
+                for j in range(nzc):
+                    sigmas_i[zsc[j]-1] = t[j]
+                sigmas.append( sigmas_i )
+                coeffs.append( dict(zip(zsc, t)) )
+
+
+        if ag.reusek:
+            if ag.fk is not None:
+                fk = ag.fk
+            assert os.path.exists(fk)
+            print('       found kernel file: ', fk)
+            dsk = np.load(fk)
+            ks1 = dsk['ks1']; ks2 = dsk['ks2']
+            print('       kernels read with success')
+            #print(' nm1=',len(ims1), 'shp1=',ks1[0].shape, 'shp2=',ks2[0].shape)
+            if iap:
+                assert (obj[ims1].zs==ag.z).sum() == ks1[0].shape[0]
+                assert (obj[ims2].zs==ag.z).sum() == ks2[0].shape[0]
+            else:
+                assert len(ims1) == ks1[0].shape[0] and len(ims2) == ks2[0].shape[0]
+        else:
+            if not ag.reusex:
+                _x = []
+                for i in ims1:
+                    mi = ms[i]
+                    xi = generate_slatm(mi.coords, mi.zs, mbtypes, local=T, sigmas=widths, dgrids=dgrids, rcut=rcut)
+                    _x.append(xi)
+                x1 = np.concatenate(_x)
+                if ag.savex:
+                    np.savez(fn1, x1=x1)
+            else:
+                if ag.fx1 is not None:
+                    fx1 = ag.fx1
+                    assert os.path.exists(fx1)
+                d1 = np.load(fx1)
+                x1 = d1['x1']
+  
+            # now x2 (test set)
+            if not ag.reusex:
+                _x = []
+                for i in ims2:
+                    mi = ms[i]
+                    xi = generate_slatm(mi.coords, mi.zs, mbtypes, local=T, sigmas=widths, dgrids=dgrids, rcut=rcut)
+                    _x.append(xi)
+                x2 = np.concatenate(_x)
+                if ag.savex:
+                    np.savez(fn2, x2=x2)
+            else:
+                if ag.fx2 is not None:
+                    fx2 = ag.fx2
+                    assert os.path.exists(fx2)
+                d2 = np.load(fx2)
+                x2 = d2['x2']
+ 
+            if ag.dmxby in ['target']:
+                dsmax = get_kernel_width(nas2, zs2, x2, kernel=ag.kernel, cab=cab, debug=debug)
+            elif ag.dmxby in ['amons']:
+                dsmax = get_kernel_width(nas1, zs1, x1, kernel=ag.kernel, cab=cab, debug=debug)
+            elif ag.dmxby in ['a', 'all']:
+                dsmax = get_kernel_width(nas, zs1+zs2, np.concatenate((x1,x2)), kernel=ag.kernel, cab=cab, debug=debug)
+            else:
+                raise Exception('#ERROR: unknown ag.dmxby')
+            print('cab=',cab, 'dsmax=', dsmax)
+
+            fun = fobj(ag.kernel)
+
+            # for Gaussian kernel
+            #if ag.kernel[0] == 'g':
+            #    factor = 1./np.sqrt(2.0*np.log(2.0))
+            #elif ag.kernel[0] == 'l':
+            #    factor = 1./np.log(2.0)
+            #else:
+            #    raise Exception('not supported!')
+            factor = fun._factor
+ 
+            sigmas = []
+            if i_atom_specific:
+                sigmas = []
+                for dcti in coeffs:
+                    sigmas_i = []
+                    for si in dcti:
+                        zi = co.chemical_symbols_lowercase.index( s2[0] )
+                        sigmas_i[zi-1] = dsmax[zi-1] * dcti[si]
+                    sigmas.append( sigmas_i )
+            else: 
+                sigmas = [ factor * dsmax * ci for ci in coeffs ]
+
+            sigmas = np.array(sigmas)
+            #print('sigmas = ', sigmas)
+  
+
+
+            # calculate kernel-matrix
+            if iap:
+                ks1 = calc_ka(x1, x1, zs1, zs1, nas1, nas1, cab, zmax, sigmas, zaq=ag.z, kernel=ag.kernel)
+                ks2 = calc_ka(x2, x1, zs2, zs1, nas2, nas1, cab, zmax, sigmas, zaq=ag.z, kernel=ag.kernel) 
+                print('  size of k1: ', ks1[0].shape, ' size of k2: ', ks2[0].shape)
+            else:
+                ks1 = fun.k(x1, x1, zs1, zs1, nas1, nas1, cab, zmax, sigmas)
+                ks2 = fun.k(x2, x1, zs2, zs1, nas2, nas1, cab, zmax, sigmas)
+
+            if ag.i_disp_eaq:
+                ksa21 = calc_ka(x2, x1, zs2, zs1, nas2, nas1, cab, zmax, sigmas, zaq=None, kernel=ag.kernel)
+
+            if ag.savek:
+                np.savez(fk, ks1=ks1, ks2=ks2)
+            #print('    ks1.size=',ks1.shape)
+            #print('    ks2.size=',ks2.shape)
+ 
+        llambdas = [ 10**(-eval(l)) for l in ag.lambdas.split(',') ] #[1e-4]: # [1e-2, 1e-4, 1e-8]
+
+        #nis = np.arange(1,1+namax)
+        #if ag.i_disp_ae: # display atomic energies at the end
+        #    nis = [namax]
+
+        idx2 = ims2
+        for ic,coeff in enumerate(coeffs):
+          _k1 = ks1[ic]; _k2 = ks2[ic]
+          for il, llambda in enumerate(llambdas):
+            print('    coeff=', coeff, 'llambda=',llambda)
+            for ni in range(1,1+namax):
+              idx1 = ims1[np.array(nhvs1) <= ni]
+              if len(idx1) == 0: continue 
+
+              if iap:
+                iasz1 = [] # relative idx within each subset of atoms associated with ag.z
+                for ii1 in idx1:
+                    ib = obj.ias1[ii1]; ie = obj.ias2[ii1]
+                    iasi = np.arange(ib,ie)
+                    iasz1 += list(obj.iasz[iasi[obj.zs[ib:ie]==ag.z]])
+                assert len(iasz1)==len(np.unique(iasz1))
+                #print('iasz1=',iasz1)
+                k1c = _k1[iasz1][:,iasz1]
+                k2c = _k2[:,iasz1]
+
+              else:
+                k1c = _k1[idx1][:,idx1]; k2c = _k2[:,idx1]
+              #print('idx1=',idx1, ' idx2=',idx2, 'k2.shape=',k2.shape)
+
+              k1 = k1c.copy(); k2 = k2c.copy()
+
+              if iap: 
+                #print(' atomic property: shift `ys to center')
+                ysp = obj.props[ag.p]
+                ys1 = []
+                for it in idx1:
+                    ib = obj.ias1[it]; ie = obj.ias2[it]
+                    ysi = ysp[it]
+                    ys1 += list( ysi[obj.zs[ib:ie]==ag.z] )
+                ys2 = []
+                for it in idx2:
+                    ib = obj.ias1[it]; ie = obj.ias2[it]
+                    ysi = ysp[it]
+                    ys2 += list( ysi[obj.zs[ib:ie]==ag.z] )
+                #print('ys1=',ys1, 'mean=', np.mean(ys1))
+                ys1_base = np.mean(ys1)
+                ys1 = np.array(ys1) - ys1_base 
+                ys2 = np.array(ys2) - ys1_base
+                istat = T
+              else:
+                #print(' extensive property: dressed atom contrib')
+                istat, ys1, ys2, _ = calc_ae_dressed(obj, idx1, idx2, meth=ag.p, ref=ag.ref)
+
+              #print('ys1=', list(ys1))
+              #print('ys2=',ys2)
+              if not istat:
+                  if len(ys2)==1:
+                      print('  %2d %6d %12.4f %12.4f'%(ni,len(idx1),np.nan, np.nan))
+                  else:
+                      print('  %2d %6d %12.4f %12.4f %12.4f'%(ni,len(idx1),np.nan, np.nan, np.nan))
+                  continue
+ 
+              #print('k1.shape = ', k1.shape, 'ys1.shape=',ys1.shape)
+              k1[np.diag_indices_from(k1)] += llambda
+              alphas = np.linalg.solve(k1,ys1)
+              ys2p = np.dot(k2,alphas)
+              #print('n2=',n2,'ys2p=',ys2p)
+              dys2 = ys2p - ys2
+              mae = np.sum(np.abs(dys2))/len(dys2)
+              rmse = np.sqrt(np.sum(dys2*dys2)/len(dys2))
+              errmax = np.max(np.abs(dys2))
+
+              if len(dys2)==1:
+                  print('  %2d %6d %12.4f %12.4f  (DressedAtom mae=%12.4f)'%(ni,len(idx1),mae,dys2[0], -ys2[-1]))
+              else:
+                  if iap:
+                    print('  %2d %6d %12.4f %12.4f %12.4f  (mae=%12.4f)'%(ni,len(idx1),mae,rmse,errmax, ys1_base))
+                  else:
+                    print('  %2d %6d %12.4f %12.4f %12.4f  (DressedAtom mae=%12.4f)'%(ni,len(idx1),mae,rmse,errmax, -ys2[-1]))
+              if ag.iprta and ni==namax:
+                  print( '  detailed outcomes of prediction:')
+                  print( '      ', dict(zip(1+idx2, [eval('%.2f'%yi) for yi in dys2])) )
+
+            if ag.i_disp_eaq:
+                if not ag.iaml:
+                    raise Exception(' ** Think twice: Is this meaningful??')
+                #print('ksa21=', ksa21)
+                #print('alpha.size=',alphas.size, ksa21[ic].shape)
+                easq = np.dot(ksa21[ic], alphas) #get_easq(idx=l) # `l is the idx of mol in test set!
+                sq = '\n'
+                for ja,eaj in enumerate(easq):
+                    suffix = '\n'
+                    if eaj == easq[-1]:
+                        suffix = ''
+                    sq += '    %4d %8.2f%s'%(ja+1, eaj, suffix)
+                print('     atomic energies: ', sq)
+                print(' =====================')
+                print('            sum: %.2f'%( sum(easq) ))
+
+            if istat and len(dys2)==1:
+                _key = 'ic%dil%d'%(ic,il)
+                if _key in res:
+                    res[_key] += list(dys2) 
+                else:
+                    res[_key] = list(dys2)
+
+    if ag.iprta:
+        if len(dys2) == 1:
+            print(' summary of predictions: ')
+            for k1 in res:
+                print('icoeff, illambda = ', k1)
+                print( dict(zip(np.arange(1,loops+1), [ eval('%.2f'%dyi) for dyi in res[k1] ] )) )
+
+if __name__ == "__main__":
+
+    import sys, time
+
+    args = sys.argv[:]
+    #for i in range(3):
+    #    print('')
+    t0 = time.time()
+    print(' now running:')
+    print(' '.join(args))
+    glc(args[1:])
+
+    print(' elapsed time: ', time.time() - t0, ' seconds' )
+
