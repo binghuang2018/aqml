@@ -157,7 +157,7 @@ class Parameters(object):
 
     def __init__(self, i3d, fixGeom, k, k2, ivdw, \
                  forcefield, thresh, gopt, M, \
-                 reduce_namons, nprocs, igchk, icpchk):
+                 reduce_namons, nprocs, igchk):
         self.i3d = i3d
         self.fixGeom = fixGeom
         self.ff = forcefield
@@ -174,7 +174,6 @@ class Parameters(object):
         self.M = M
         self.nprocs = nprocs
         self.igchk = igchk
-        self.icpchk = icpchk
 
 
 
@@ -1246,7 +1245,7 @@ class ParentMols(object):
                  scale_vdw=1.0, thresh=0.01, wsmi=T, keepHalogen=F, nprocs=1, \
                  forcefield='mmff94', gopt='rkff', ixtb=F, nocrowd=T, \
                  icc4Rsp3out=F, nogc=F, iasp2arout=T, \
-                 ioc=F, iocn=F, icrl2o=T, igchk=T, icpchk=T, irddtout=F, \
+                 ioc=F, iocn=F, icrl2o=T, igchk=T, irddtout=F, \
                  ivdw=F, ivao=F, nmaxcomb=2, reuseg=F, saveg=F, \
                  irad=F, ichg=F, prefix='', iwarn=T, debug=F, log=T):
 #                 do_pm7=False, relaxHHV=False, \
@@ -1371,11 +1370,10 @@ class ParentMols(object):
         self.k2 = k2
 
         # igchk : check geometry after optg by ff
-        # icpchk: check ?
         param = Parameters(i3d, fixGeom, k, k2, ivdw, \
                            forcefield, thresh, \
                            gopt, M, reduce_namons, nprocs, \
-                           igchk, icpchk)
+                           igchk)
 
         ncpu = multiprocessing.cpu_count()
         if nprocs > ncpu:
@@ -1454,7 +1452,7 @@ class ParentMols(object):
             cansi = []
             nasv = []
 
-            # we need all fragments, including those that are redundant 
+            # we need all fragments, including those that are redundant
             # (i.e., there exist at least 2 configs that possess d(x1,x2)=0)
             # The redundency will be removed when merging molecules to obtain
             # valid vdw complexes
@@ -1639,14 +1637,14 @@ class ParentMols(object):
                                     nbv3 = gv3.sum()/2
                                     if np.all(gc3==0) and nbv3 >= 2:
                                         if nbv3 == 2:
-                                            # 
+                                            #
                                             #      im --- jm                         im
                                             #              \                        /  \
                                             #               \                      /    \
                                             #                km                   jm-----km
                                             #          (I)                          (II)
                                             # where im,jm and km are cov amons.
-                                            # For (I), if im and km are too far apart, 
+                                            # For (I), if im and km are too far apart,
                                             # remove this vdw cplx; Always keep (II)!
                                             icp1, icp2 = np.where(cnsvv3==1)[0]
                                             atsq1 = lms[c3[icp1]].iasvq; atsq2 = lms[c3[icp2]].iasvq
@@ -1686,9 +1684,9 @@ class ParentMols(object):
                                             if np.all(cns4==2) or np.any(cns4==3):
                                                 #
                                                 # keep the following two patterns
-                                                #     
-                                                #             im             
-                                                #              |             im-----jm 
+                                                #
+                                                #             im
+                                                #              |             im-----jm
                                                 #              |             |       |
                                                 #             jm             |       |
                                                 #            /  \            |       |
