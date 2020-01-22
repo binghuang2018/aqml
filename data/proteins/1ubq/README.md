@@ -2,7 +2,7 @@
 
 Details about the files in this folder:
 
-- `g7v/`: the directory containing all amons (N_I<=7) , including both covalent and vdW amons. Single point energies calculated at the level of PBE/Def2-SVP are to be used for energy prediction of 1ubq calculated at the same level.
+- `g7v/`: the directory containing all amons ($N_I\leq 7$) , including both covalent and vdW amons. Single point energies calculated at the level of PBE/Def2-SVP are to be used for energy prediction of 1ubq calculated at the same level.
 
 - `amons-r3.6`: cutout amons used for prediction of properties of long-range nature, i.e., NMR shifts.
 
