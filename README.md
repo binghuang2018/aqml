@@ -40,6 +40,7 @@ Amons-based quantum machine learning for quantum chemistry
 - `rdkit`: cheminformatic package 
 - `networkx` a Python package for the creation, manipulation, and study of the structure, dynamics, and functions of complex networks. [https://networkx.github.io/documentation/stable/install.html]
 - `ase`: Atomic Simulation Environment [https://wiki.fysik.dtu.dk/ase/install.html]
+- `deepdish`: hdf5 python library 
 
 
 optional:
@@ -48,7 +49,6 @@ optional:
 - `indigo`: cheminformatic package https://lifescience.opensource.epam.com/indigo/index.html#download-and-install
 - `openbabel`: cheminformatic package http://openbabel.org/wiki/Category:Installation
 - `cairosvg`: convert svg to png, pdf, etc.
-- `deepdish`: hdf5 python library 
 
 I recommend using `conda` (for Python 3+) to install all dependencies
 
@@ -76,7 +76,7 @@ conda install -y -c rdkit rdkit
 
 - other dependencies
 ```bash
-pip install ase imolecule networkx 
+pip install ase imolecule networkx deepdish
 ```
 
 - clone the repository
@@ -102,7 +102,7 @@ Now you are ready to go!
 
 # Usage
 
-## command line
+## commandline
 
 ### aqml
 ```bash
@@ -316,6 +316,7 @@ If your input is mol graph together with 3d coordinates (such as a sdf file), th
 >>> a.cans
 ['C', 'C=C', 'C=CC=C', 'CC=C', 'CC(=C)C=C', 'CC=CC=C', 'c1ccccc1']
 ```
+Meanwhile, the same files (`g5.out` and directory `g5/`) would be generated as in the case of running `genamon` from the commandline above.
 
 # Publications
 
