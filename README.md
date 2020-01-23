@@ -100,6 +100,13 @@ source ~/.bashrc
 
 Now you are ready to go!
 
+(optional) installation of other dependencies
+- openbabel
+```bash
+conda install -y -c openbabel openbabel 
+```
+
+
 # Usage
 
 ## commandline
