@@ -94,7 +94,7 @@ python setup.py install
 - Install python codes
 ```bash
 echo "export PYTHONPATH=$PWD:$PYTHONPATH" >>~/.bashrc
-echo "export PATH=$PWD/bin:$PATH >>~/.bashrc
+echo "export PATH=$PWD/bin:$PATH" >>~/.bashrc
 source ~/.bashrc
 ```
 
@@ -288,16 +288,33 @@ this file is not useful at all. iii) the folder `i-raw/` stores the original loc
 
 ## python functions
 
-### amons generataion
+### amons graph generataion
+
+If your input is mol graph, the output is also mol graph, though of smaller size.
+
 ```bash
 
 >>> import cheminfo.oechem.amon as coa
 >>> li = ['Cc1ccccc1']
->>> obj = coa.ParentMols(li, k=5, i3d=F)
+>>> obj = coa.ParentMols(li, k=5, i3d=False)
 >>> a = obj.generate_amons()
 >>> a.cans
 ['C', 'C=C', 'C=CC=C', 'CC=C', 'CC(=C)C=C', 'CC=CC=C', 'c1ccccc1']
 
+```
+
+### amons conformer generataion
+
+If your input is mol graph together with 3d coordinates (such as a sdf file), the output is amons with 3d coords (hereafter we call them amons conformers).
+
+```bash
+>>> import cheminfo.oechem.amon as coa
+
+>>> li = ['test/phenol.sdf', ] # multiple 
+>>> obj = coa.ParentMols(li, k=5, i3d=True)
+>>> a = obj.generate_amons()
+>>> a.cans
+['C', 'C=C', 'C=CC=C', 'CC=C', 'CC(=C)C=C', 'CC=CC=C', 'c1ccccc1']
 ```
 
 # Publications
