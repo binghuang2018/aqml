@@ -11,7 +11,7 @@ import numpy as np
 import ase.io as aio
 import io2, ase, copy
 import tempfile as tpf
-import cheminfo.openbabel.obabel as cib
+#import cheminfo.openbabel.obabel as cib
 import cheminfo.math as cim
 import cheminfo.graph as cg
 import cheminfo.core as cc
@@ -694,7 +694,7 @@ class RDMol(object):
                 #if doff:
                 if AllChem.EmbedMolecule(mu):
                     print('RDKit failed to embed, use openbabel instead!')
-                    #raise
+                    import cheminfo.openbabel.obabel as cib
                     s2 = cib.Mol(obj, make3d=True)
                     self.keep_parent = T # in this case, keep the parent geom as the only conformer
                     mu = s2.to_RDKit()
