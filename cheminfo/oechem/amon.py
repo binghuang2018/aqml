@@ -16,7 +16,6 @@ import cheminfo.core as cc
 from cheminfo.rw.ctab import write_ctab
 from rdkit import Chem
 import scipy.spatial.distance as ssd
-import cheminfo.openbabel.obabel as cib
 import multiprocessing
 import cheminfo.core as cic
 import cheminfo.math as cim
@@ -346,6 +345,7 @@ class Sets(object):
             #    print(' ** info: param.gopt switched to PM6-D3H4')
 # the default case, use openbabel to do constrained optimization
             if self.param.gopt.lower() in ['obff']:
+                import cheminfo.openbabel.obabel as cib
                 ob1 = cib.Mol( ctab, fmt='sdf' )
                 ob1.optg_c(iconstraint=3, ff="MMFF94", \
                            optimizer='cg', steps=[30,90], ic=True)
