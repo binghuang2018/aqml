@@ -25,7 +25,7 @@ import itertools as itl
 import tempfile as tpf
 import cheminfo.graph as cg
 from cheminfo.molecule.elements import Elements
-import cml.famoneib as fa
+#import cml.famoneib as fa
 import cheminfo.oechem.core as coc
 
 global dsHX
