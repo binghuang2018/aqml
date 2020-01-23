@@ -78,6 +78,11 @@ conda install -y -c rdkit rdkit
 ```bash
 pip install ase imolecule networkx deepdish
 ```
+Note that `networkx>=2.4` seems not to work, so it's safer to run instead
+
+```bash
+pip install networkx==2.2
+```
 
 - clone the repository
 
