@@ -41,6 +41,7 @@ Amons-based quantum machine learning for quantum chemistry
 - `networkx` a Python package for the creation, manipulation, and study of the structure, dynamics, and functions of complex networks. [https://networkx.github.io/documentation/stable/install.html]
 - `ase`: Atomic Simulation Environment [https://wiki.fysik.dtu.dk/ase/install.html]
 - `deepdish`: hdf5 python library 
+- `sympy`: python package doing symbolic math
 
 
 optional:
@@ -76,7 +77,7 @@ conda install -y -c rdkit rdkit
 
 - other dependencies
 ```bash
-pip install ase imolecule networkx deepdish
+pip install ase imolecule networkx deepdish sympy
 ```
 Note that `networkx>=2.4` seems not to work, so it's safer to run instead
 
