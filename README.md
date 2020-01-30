@@ -99,8 +99,8 @@ python setup.py install
 
 - Install python codes
 ```bash
-echo "export PYTHONPATH=$PWD:$PYTHONPATH" >>~/.bashrc
-echo "export PATH=$PWD/bin:$PATH" >>~/.bashrc
+echo "export PYTHONPATH=$PWD:\$PYTHONPATH" >>~/.bashrc
+echo "export PATH=$PWD/bin:\$PATH" >>~/.bashrc
 source ~/.bashrc
 ```
 
