@@ -1,7 +1,7 @@
 aqml
 =====
 
-Amons-based quantum machine learning for quantum chemistry
+Amons-based quantum machine learning code for quantum chemistry
 
 ***
 
