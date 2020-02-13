@@ -5,8 +5,11 @@ Amons-based quantum machine learning code for quantum chemistry
 
 ***
 
-*Author:* Bing Huang (University of Basel, Switzerland) bing.huang@unibas.ch
+*Authors:* 
+- Bing Huang (University of Basel, Switzerland) bing.huang@unibas.ch
+- Anatole von Lilienfeld (University of Basel, Switzerland) anatole.vonlilienfeld@unibas.ch
 
+Created: 2019
 *Created:* 2019
 
 ***
