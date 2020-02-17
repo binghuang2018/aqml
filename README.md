@@ -4,7 +4,7 @@ AQML: Amons-based Quantum Machine Learning for quantum chemistry
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3670027.svg)](https://doi.org/10.5281/zenodo.3670027)
 
 
-AQML is a mixed Python/Fortran/C++ package, intends to simulating quantum chemistry problems through the use of **amons** --- the fundamental building blocks of larger systems (such as protein, solid).
+AQML is a mixed Python/Fortran/C++ package, intends to simulate quantum chemistry problems through the use of **amons** --- the fundamental building blocks of larger systems (such as protein, solid).
 
 
 
@@ -19,10 +19,11 @@ AQML is a mixed Python/Fortran/C++ package, intends to simulating quantum chemis
 
 # Features:
 
-- Automatic workflow of generating quantum chemical reference data. These programs are currently supported:
+- Automatic workflow of generating quantum chemical reference data. The following programs are currently supported:
   - G09
   - ORCA4
   - MOLPRO
+  - CASINO (for QMC data)
 
 - Molecular representation
   - Parameter-free global SLATM (Spectrum of London and Axilrod-Teller-Muto potential) representations
@@ -42,8 +43,9 @@ AQML is a mixed Python/Fortran/C++ package, intends to simulating quantum chemis
 
 # Todo's
 - Remove the dependency on `ase` and `oechem`
-- force prediction using SLATM
-   * geometry optimization, molecular dynamics
+- Force prediction using SLATM
+   - geometry optimization
+   - molecular dynamics
 
 
 # Installation
@@ -222,7 +224,7 @@ Meanwhile, the same files (`g5.out` and directory `g5/`) would be generated as i
 
 A Demo (see demo/README.md for detail) is provided for an exemplified QM9 molecule (molecule I in Fig. 2C of reference [huang2017dna], also shown below),
 
-![Demo molecule](demo/demo.png)
+<img src="demo/demo.png" width="300">
 
 covering the four essential aspects of AML:
 
