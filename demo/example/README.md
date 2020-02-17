@@ -15,8 +15,9 @@ Then a folder named `g7` would be created, including sdf files of corresponding 
 
 ## Running quantum chemical calculations
 
-Now we need to generate reference data for training/test.
-Here we consider only the ground state single point energy calculated at B3LYP/cc-pVDZ level for the target QM9 molecule.
+Before preceding, a copy of the quantum chemistry program `orca4' has to be acquired (for downloads, fill the registration form at https://cec.mpg.de/orcadownload/).
+
+For generation of quantum chemical reference data for training/test, here we consider only the ground state geometry and energy of the target QM9 molecule calculated at B3LYP/cc-pVDZ level. Three consecutive steps are necessary:
 
   - First generate input files for ORCA 4:
 ```bash
@@ -24,18 +25,19 @@ gen_orca_jobs -loose -t optg -m b3lyp -b vdz -n 1 g7/*.sdf target/*.sdf
 ```
 The option `-n 1` specifies the number of processes to be used. Choose a larger number to speed up computations.
 
-  - run orca4 jobs:
+  - Then run orca4 jobs through calling the script `batch_orca`:
 ```bash
 batch_orca g7/*.com target/*.com >out1 &
 ```
-Note: before running, the user needs to reset the path to `orca4` in file `bin/batch_orca_base`.
+Note: before running, the user needs to reset the path to `orca4` in file `which batch_orca_base` (located under `$AQML/bin`, where `$AQML` denotes the root directory of the `aqml` package).
 
-Reference input & output files of orca4 jobs are provided under folder `reference/`.
+Reference input & output files of orca4 jobs are provided under folder `reference/` with suffix `.com` and `.out`, respectively.
 
   - Convert output files to xyz format once all calculations are done:
 ```bash
 orca2xyz g7/*.out target/*.out
 ```
+The resulting `xyz` files contain relaxed geometries, the same as the usual `xyz` file format-wise. Poperties (only energy as the default case) is written to the second line, with the format of, say `b3lypvdz=-40.0321`, which means the single point energy calculated at the level B3LYP/cc-pVDZ is -40.0321 Hartree (Atomic unit is the default for all properties in `xyz` files).
 
 ## AML prediction
 

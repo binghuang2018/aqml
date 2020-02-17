@@ -1,0 +1,288 @@
+#!/usr/bin/env python
+
+import os,sys
+import util.stropr as so
+import numpy as np
+import cheminfo.core as cc
+
+T,F = True,False
+dct = dict(zip(['T','True','true','F','False','false'], [T,T,T,F,F,F]))
+
+# geometry opt threshold
+# molpro default: gradient(max)=3e-4, disp(max)=3e-4
+gthresh = {'g09':',gaussian', \
+          'g09_tight':',gradient=1.5e-5,step=6.0e-5,gaussian,srms=4e-5,grms=1e-5', \
+          'molpro':'', \
+          'molpro_diss':',gradient=3e-4,step=0.1,energy=1e-4', \
+          'molpro_loose':',gradient=3e-4,step=0.1,energy=1e-4', \
+          }
+gthresh.update( {
+          'loose': ',gradient=3e-3,step=0.03,energy=1e-4,gaussian,srms=0.02,grms=2e-3', \
+} )
+
+
+def is_done(fo):
+    llast = open(fo).readlines()[-1]
+    return ('Molpro calculation term' in llast) and ('warning' not in llast)
+
+def to_dn(fn):
+    os.system('[[ ! -d dn/ ]] && mkdir dn; mv %s.* dn/'%fn)
+
+args = sys.argv[1:]
+
+icnt = 0
+keys = ['-restart','-r']; restart, icnt = so.haskey(args, keys, icnt)
+
+keys=['-t','-task']; hask,task,icnt = so.parser(args,keys,'optg',icnt)
+assert hask, '#ERROR: plz specify [-task e/opt/optg]'
+
+
+keys=['-mem','-memory']; hask,smem,icnt = so.parser(args,keys,'600',icnt) # in MW
+assert hask, '#ERROR: plz specify [-mem 100]' 
+
+
+keys=['-b','-bst','-basis']; hask,_bst,icnt = so.parser(args,keys,'vtz',icnt)
+assert hask, '#ERROR: plz specify [-bst vdz-f12/avdz-f12/...]'
+
+keys=['-b2','-bst2','-basis2']; ib2,_bst2,icnt = so.parser(args,keys,'vqz',icnt)
+
+
+keys=['-df']; hask,_df,icnt = so.parser(args,keys,'T',icnt)
+assert hask, '#ERROR: plz specify [-df T/F]'
+df = dct[_df]
+
+
+
+
+keys=['-m','-meth']; hask,meth,icnt = so.parser(args,keys,'mp2',icnt)
+assert hask, '#ERROR: plz specify [-method mp2/ccsd(t)]' 
+
+keys=['-wfn',]; iwfn,icnt = so.haskey(args,keys,icnt)
+swfn = '' if iwfn else '!'
+
+keys=['-ri']; hask,sri,icnt = so.parser(args,keys,'jkfit',icnt)
+
+
+
+keys=['-disp']; disp,icnt = so.haskey(args,keys,icnt)
+_s = ';disp,1' if disp else ''
+imp2 = F
+meth = meth.lower()
+if meth in ['pbe','bp86','tpss','b3lyp']:
+    if df:
+        smeth = '{df-ks,%s,df_basis=jkfit%s}'%(meth,_s)
+    else:
+        smeth = '{ks,%s%s'%(meth,_s)
+elif ('mp' in meth) or ('sd' in meth):
+
+
+  keys=['-f12']; hask,sf12,icnt = so.parser(args,keys,'T',icnt) 
+  assert hask, '#ERROR: plz specify [-f12 T/F]'
+  f12 = F
+  if ('f12' in _bst):
+      f12 = T
+  else:
+      f12 = dct[sf12]
+  
+  sdf = ''
+  if f12:
+      sdf = 'df-'; df = T
+
+  smeth = 'hf\n'
+  if f12:
+    if meth == 'mp2':
+      s2 = '{df-mp2-f12,ansatz=3*C(FIX,HY1),cabs=0,cabs_singles=0}'
+    elif meth == 'lmp2':
+      s2 = '{pno-lmp2-f12}' #,ansatz=3*C(FIX,HY1),cabs=0,cabs_singles=0}'
+    elif meth == 'ccsd(t)':
+      s2 = 'df-ccsd(t)-f12\ne_f12a=energy(1)\ne_f12b=energy(2)\n'
+    elif meth == 'lccsd(t)':
+      s2 = '{mp2-f12,cabs_singles=-1}\n{pno-lccsd(t)-f12,domopt=tight}\ne_f12a=energy(1)\ne_f12b=energy(2)\n'
+    else:
+      raise Exception('#ERROR: not supported method')
+  else:
+    if meth in ['ccsd(t)','ccsd']:
+      s2 = sdf + '%s\n'%meth 
+    elif meth in [ 'qcisd(t)','qcisd']:
+      s2 = meth + '\n'
+    elif meth in ['mrci']:
+      s2 = 'hf;\nescf=energy\n\ncasscf;\necasscf=energy\n\nmrci;\nemrci=energy(1)\nemrci_q=energd0(1)\n'
+    else:
+      raise Exception('#ERROR: not supported method')
+
+  imp2 = T
+  smeth += s2 # '{df-hf,df_basis=jkfit}\n{df-mp2,df_basis=mp2fit}'
+else:
+  raise Exception('#ERROR: method for optg not supported')
+
+ccbsts = ['vdz','vtz','vqz','v5z', 'avdz','avtz','avqz','av5z']
+ccbsts_psp = [ si+'-pp' for si in ccbsts ]
+def2bsts = ['dzvp','tzvp','qzvp', 'adzvp','atzvp','aqzvp', ]
+def2bsts_psp = ['dzvpp','tzvpp','qzvpp', 'adzvpp','atzvpp','aqzvpp']
+bsts = ccbsts + ccbsts_psp + def2bsts + def2bsts_psp
+bsts_psp = ccbsts_psp + def2bsts_psp
+assert _bst in bsts, '#ERROR: bst not supported'
+
+_dic_bst_heav = dict(zip(ccbsts,ccbsts_psp))
+_dic_bst_heav.update( dict(zip(def2bsts,def2bsts_psp)) )
+
+ipsp = T if _bst in bsts_psp else F
+_bst_heav = _bst if ipsp else _dic_bst_heav[_bst]
+
+_dic_dfb = {'vdz':'vtz', 'vtz':'vqz', 'avdz':'avtz', 'avtz':'avqz', 'avqz':'avqz', \
+       'dzvp':'tzvp', 'tzvp':'qzvp', 'adzvp':'atzvp', 'atzvp':'aqzvp', 'aqzvp':'aqzvp', \
+       'vdz-pp':'tzvpp','vtz-pp':'qzvpp','avdz-pp':'atzvpp','avtz-pp':'aqzvpp','avqz-pp':'aqzvpp',\
+       'dzvpp':'tzvpp', 'tzvpp':'qzvpp', 'adzvpp':'atzvpp', 'atzvpp':'aqzvpp', 'aqzvpp':'aqzvpp'}
+
+# add 'def2-' as prefix?
+
+
+def get_sdef2(b):
+  sdef2 = ''
+  if b in def2bsts+def2bsts_psp:
+    sdef2 = 'def2-'
+  return sdef2
+
+bst = get_sdef2(_bst) + _bst
+bst_heav = get_sdef2(_bst_heav) + _bst_heav
+
+_dfb = _bst2 if ib2 else _dic_dfb[_bst]
+dfb = get_sdef2(_dfb) + _dfb
+
+_dfb_heav = _dic_dfb[_bst_heav]
+dfb_heav = get_sdef2(_dfb_heav) + _dfb_heav
+
+els_heav = ['I','Sn'] # atoms for which psp are used
+
+
+
+if task in ['opt','optg']:
+    st = '{optg' 
+    keys=['-gc','-gconv']; hask,gc,icnt = so.parser(args,keys,'molpro',icnt)
+    st += '%s'%gthresh[gc]
+
+    keys=['-maxit']; hask,sn,icnt = so.parser(args,keys,'36',icnt)
+    if hask: st += ',maxit=%s'%sn
+
+    keys=['-algo']; hask,algo,icnt = so.parser(args,keys,None,icnt)
+    if hask: st += ',method=%s'%algo  # e.g., "qsd"
+
+    keys=['-diis']; diis,sn1,icnt = so.parser(args,keys,'6',icnt); n1 = int(sn1)
+    if diis: st += ';method,diis,%s,step'%sn1
+
+    keys=['-calcfc']; calcfc,sval,icnt = so.parser(args,keys,'F',icnt)
+    if calcfc:
+        assert not diis
+        if sval in ['F','T','True','False']:
+            st += ';hessian,numerical=0' # calculate hessian once
+        else:
+            st += ';hessian,numerical=%d'%(int(sval)) # calc hessian every `sval steps
+    st += '}'
+elif task in ['e','energy']:
+    st = ''
+elif task in ['force','forces']:
+    st = '{force}'
+else:
+    raise Exception('task not supported')
+
+fs = args[icnt:]
+
+# check length of files
+lens = [ len(fi) for fi in fs ]
+#assert len(np.unique(lens))==1
+
+if not os.path.isdir('trash'):
+    os.mkdir('trash/')
+
+for fi in fs:
+    print('f=',fi)
+
+    mi = cc.molecule(fi)
+
+    sb = "default=%s\n"%bst                                                  
+    if not ipsp:
+      for el in els_heav:
+        if el in mi.symbols:
+          sb += "%s=%s\n"%(el,bst_heav)
+    
+    sbaux = ""
+    if df:
+      jkdfb = "\nset,jkfit,context=jkfit\ndefault=%s\n"%dfb
+      if not ipsp:
+        for el in els_heav:
+          if el in mi.symbols:
+            jkdfb += '%s=%s\n'%(el,dfb_heav)
+      sb += jkdfb
+    
+      mp2dfb = "\nset,mp2fit,context=mp2fit\ndefault=%s\n"%dfb
+      if not ipsp:
+        for el in els_heav:
+          if el in mi.symbols:
+            mp2dfb += '%s=%s\n'%(el,dfb_heav)
+
+      ridfb = "\nset,ri,context=%s\ndefault=%s\n"%(sri,dfb)
+      if not ipsp:
+        for el in els_heav:
+          if el in mi.symbols:
+            ridfb += '%s=%s\n'%(el,dfb_heav)
+
+      sbaux = "\nexplicit,ri_basis=ri,df_basis=mp2fit,df_basis_exch=jkfit\n"
+
+      if imp2: 
+          sb = sb + mp2dfb + ridfb
+
+    fn = fi[:-4]; fo=fn+'.out'; fl=fn+'.log'
+    iok = False
+    if os.path.exists(fo):
+        if not is_done(fo):
+            imv = True
+            if os.path.exists(fl):
+                c = os.popen("grep 'Current geom' %s.log"%fn).read().strip()
+                if c != '':
+                    iok = True; imv = False
+                    os.system('molproLog2xyz %s.log; mv %s_temp.xyz %s.xyz'%(fn,fn,fn))
+            if imv:
+                os.system('mv %s.out %s.xml %s.log trash/ 2>/dev/null'%(fn,fn,fn))
+        else:
+            print('  ++ %s [DONE]'%fo )
+            to_dn(fn)
+            continue
+        os.system('mv %s.out %s.log %s.xml trash/ 2>/dev/null'%(fn,fn,fn) )
+    else:
+        #assert os.path.exists(fn+'.xyz') 
+        print(' ** generate molpro inputs from xyz/sdf file')
+        iok = True
+    if not iok:
+        continue
+    #geom = ''.join( open(fi).readlines() )
+    geom = '%d\n\n'%mi.na + ''.join( ['{si} {ci[0]} {ci[1]} {ci[2]}\n'.format(si=mi.symbols[ia], ci=mi.coords[ia]) for ia in range(mi.na) ] )
+    sg = """
+geomtype=xyz
+geometry = {
+%s}\n"""%geom
+
+
+
+    #wf = os.environ['SCRATCH']+'/.scr/wfu/%s.wfu'%fn
+    #if os.path.exists(wf): 
+    #    obj = os.stat(wf)
+    #    if obj.st_size > 10^6: # bytes !!!!!!! you may need to change this!!
+    #        s1 = ''
+
+    sl = """
+memory,%s,M
+
+%sfile,1,%s.int !save integrals file
+%sfile,2,%s.wfu !save wavefunctions to file, as well as geom & grad
+
+%s
+
+basis={%s}
+
+%s
+
+%s
+%s
+---"""%(smem,swfn,fn,swfn,fn,sg,sb,sbaux,smeth,st)
+    with open(fn+'.com', 'w') as fid: fid.write(sl)
+

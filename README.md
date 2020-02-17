@@ -1,7 +1,11 @@
-aqml
+
+AQML: Amons-based Quantum Machine Learning for quantum chemistry
 =====
 
-Amons-based quantum machine learning code for quantum chemistry
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3670027.svg)](https://doi.org/10.5281/zenodo.3670027)
+
+AQML is a mixed Python/Fortran/C++ package, intends to simulating quantum chemistry problems through the use of **amons** --- the fundamental building blocks of larger systems (such as protein, solid).
+
 
 ***
 
@@ -16,13 +20,26 @@ Created: 2019
 
 
 # Features:
-- Parameter-free global SLATM representations, and its local (atomic) counterpart aSLATM. SLATM is the abbreviation of Spectrum of London and Axilrod-Teller-Muto potential.
-   * A new pair-wise version is available, dealing with dataset consisting of many elements.
-- BAML representation, including up to 4-body potential (UFF inspired)
-- Multi-fidelity KRR
-- Automatic sampling of training set that are most representative for the query
-   - composition and size-independent
-   - limited to molecule/solid with explicit graph (w/wo periodic boundary condition)
+
+- Automatic workflow of generating quantum chemical reference data. These programs are currently supported:
+  - G09
+  - ORCA4
+  - MOLPRO
+
+- Molecular representation
+  - Parameter-free global SLATM (Spectrum of London and Axilrod-Teller-Muto potential) representations
+    - global SLATM and its local (atomic) counterpart aSLATM. 
+    - A new pair-wise version of aSLATM is available, dealing favorably with dataset involving many elements.
+  - Bond, Angle ML (BAML) representation, including up to 4-body potential (UFF inspired)
+  - Graph-based representation (coming soon...)
+
+- Machine learning
+  - KRR and multi-fidelity KRR
+  - Deep neural network potential (under developement...)
+
+- Amons selection algorithm: automatic sampling of training set that are most representative for the query
+  - composition and size-independent
+  - currently limited to molecule/solid with explicit graph (w/wo periodic boundary condition)
 
 
 # Todo's
@@ -205,12 +222,15 @@ Meanwhile, the same files (`g5.out` and directory `g5/`) would be generated as i
 
 # Demo
 
-A Demo is provided for an exemplified QM9 molecule (molecule I in Fig. 2C of reference [huang2017dna]), covering the four essential aspects of AML:
+A Demo (see demo/README.md for detail) is provided for an exemplified QM9 molecule (molecule I in Fig. 2C of reference [huang2017dna]), covering the four essential aspects of AML:
 
-- generation of amons
-- quantum chemistry calculations
-- generation of (a)SLATM representation 
-- AML prediction of the total energy of the exemplified molecule.
+- Generation of amons
+- Quantum chemistry calculations for target molecule and its associated amons
+- Generation of aSLATM representation 
+- AML prediction of the total energy of the target molecule.
+
+![Demo molecule](demo/demo.svg)
+
 
 
 # Publications
@@ -219,13 +239,14 @@ If you have used `aqml` in your research, please consider citing these papers:
 
 - "Understanding molecular representations in machine learning: The role of uniqueness and target similarity", B. Huang, OAvL,J. Chem. Phys. (Communication) 145 161102 (2016), https://arxiv.org/abs/1608.06194
 - "Boosting quantum machine learning models with multi-level combination technique: Pople diagrams revisited" P. Zaspel, B. Huang, H. Harbrecht, OAvL submitted to JCTC (2018) https://arxiv.org/abs/1808.02799
-- "The DNA of chemistry: Scalable quantum machine learning with amons", B. Huang, OAvL, https://arxiv.org/abs/1707.04146
+- "The DNA of chemistry: Scalable quantum machine learning with amons", B. Huang, OAvL, arXiv:1707.04146, 2017, https://arxiv.org/abs/1707.04146
 
 ```bash
 @article{huang2017dna,
   title={The ``DNA'' of chemistry: Scalable quantum machine learning with ``amons''},
   author={Huang, Bing and von Lilienfeld, O Anatole},
   journal={arXiv preprint arXiv:1707.04146},
+  url={https://arxiv.org/abs/1707.04146},
   year={2017}
 }
 @article{zaspel2018boosting,
