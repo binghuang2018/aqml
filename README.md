@@ -1,11 +1,18 @@
+<<<<<<< HEAD
 
 AQML: Amons-based Quantum Machine Learning for quantum chemistry
+=======
+aqml: Amons-based Quantum Machine Learning for quantum chemistry
+>>>>>>> e8142683424e2192dad5339aeec727d87fdf3662
 =====
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3670027.svg)](https://doi.org/10.5281/zenodo.3670027)
 
+<<<<<<< HEAD
 AQML is a mixed Python/Fortran/C++ package, intends to simulating quantum chemistry problems through the use of **amons** --- the fundamental building blocks of larger systems (such as protein, solid).
 
+=======
+>>>>>>> e8142683424e2192dad5339aeec727d87fdf3662
 
 ***
 
