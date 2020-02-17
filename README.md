@@ -1,29 +1,20 @@
-<<<<<<< HEAD
 
 AQML: Amons-based Quantum Machine Learning for quantum chemistry
 =======
-aqml: Amons-based Quantum Machine Learning for quantum chemistry
->>>>>>> e8142683424e2192dad5339aeec727d87fdf3662
-=====
-
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3670027.svg)](https://doi.org/10.5281/zenodo.3670027)
 
-<<<<<<< HEAD
+
 AQML is a mixed Python/Fortran/C++ package, intends to simulating quantum chemistry problems through the use of **amons** --- the fundamental building blocks of larger systems (such as protein, solid).
 
-=======
->>>>>>> e8142683424e2192dad5339aeec727d87fdf3662
 
-***
 
 *Authors:* 
 - Bing Huang (University of Basel, Switzerland) bing.huang@unibas.ch
 - Anatole von Lilienfeld (University of Basel, Switzerland) anatole.vonlilienfeld@unibas.ch
 
-Created: 2019
+
 *Created:* 2019
 
-***
 
 
 # Features:
@@ -229,14 +220,18 @@ Meanwhile, the same files (`g5.out` and directory `g5/`) would be generated as i
 
 # Demo
 
-A Demo (see demo/README.md for detail) is provided for an exemplified QM9 molecule (molecule I in Fig. 2C of reference [huang2017dna]), covering the four essential aspects of AML:
+A Demo (see demo/README.md for detail) is provided for an exemplified QM9 molecule (molecule I in Fig. 2C of reference [huang2017dna], also shown below),
+
+![Demo molecule](demo/demo.png)
+
+covering the four essential aspects of AML:
 
 - Generation of amons
 - Quantum chemistry calculations for target molecule and its associated amons
 - Generation of aSLATM representation 
 - AML prediction of the total energy of the target molecule.
 
-![Demo molecule](demo/demo.svg)
+
 
 
 
