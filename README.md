@@ -19,11 +19,9 @@ AQML is a mixed Python/Fortran/C++ package, intends to simulate quantum chemistr
 
 # Features:
 
-- Automatic workflow of generating quantum chemical reference data. The following programs are currently supported:
-  - G09
-  - ORCA4
-  - MOLPRO
-  - CASINO (for QMC data)
+- Amons selection algorithm: automatic sampling of training set that are most representative for the query
+  - composition and size-independent
+  - currently limited to molecule/solid with explicit graph (w/wo periodic boundary condition)
 
 - Molecular representation
   - Parameter-free global SLATM (Spectrum of London and Axilrod-Teller-Muto potential) representations
@@ -36,9 +34,12 @@ AQML is a mixed Python/Fortran/C++ package, intends to simulate quantum chemistr
   - KRR and multi-fidelity KRR
   - Deep neural network potential (under developement...)
 
-- Amons selection algorithm: automatic sampling of training set that are most representative for the query
-  - composition and size-independent
-  - currently limited to molecule/solid with explicit graph (w/wo periodic boundary condition)
+- Automatic workflow of generating quantum chemical reference data. The following programs are currently supported:
+  - G09
+  - ORCA4
+  - MOLPRO
+  - CASINO (a QMC package)
+
 
 
 # Todo's
@@ -115,11 +116,13 @@ git clone https://github.com/binghuang2018/aqml.git
 
 - Build core ML library (mainly fortran code for time-consuming part of compuation)
 ```bash
-cd aqml/coreml
+cd aqml
+export AQML_ROOT=$PWD
+cd $AQML_ROOT/coreml
 python setup.py install
 ```
 
-- Install python code through `./install.sh`
+- Install python code through `cd $AQML_ROOT; ./install.sh`
 
 Now you are ready to go!
 
@@ -250,20 +253,13 @@ If you have used `aqml` in your research, please consider citing these papers:
    author = "Huang, Bing and von Lilienfeld, O. Anatole",
    title = "Communication: Understanding molecular representations in machine learning: The role of uniqueness and target 
 similarity",
-   journal = jcp,
+   journal = "Journal of Chemical Physics",
    year = "2016",
    volume = "145",
    number = "16",
    eid = 161102,
    pages = "",
    doi = "http://dx.doi.org/10.1063/1.4964627"
-}
-@article{huang2017dna,
-  title={The ``DNA'' of chemistry: Scalable quantum machine learning with ``amons''},
-  author={Huang, Bing and von Lilienfeld, O Anatole},
-  journal={arXiv preprint arXiv:1707.04146},
-  url={https://arxiv.org/abs/1707.04146},
-  year={2017}
 }
 @article{zaspel2018boosting,
   title={Boosting quantum machine learning models with a multilevel combination technique: pople diagrams revisited},
@@ -276,8 +272,13 @@ similarity",
   publisher={ACS Publications},
   doi = {https://doi.org/10.1021/acs.jctc.8b00832}
 }
+@article{huang2017dna,
+  title={The ``DNA'' of chemistry: Scalable quantum machine learning with ``amons''},
+  author={Huang, Bing and von Lilienfeld, O Anatole},
+  journal={arXiv preprint arXiv:1707.04146},
+  url={https://arxiv.org/abs/1707.04146},
+  year={2017}
+}
 
 ```
-
-
 
