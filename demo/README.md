@@ -7,7 +7,7 @@ As a demo, here we try to reproduce the black learning curve displayed in Figure
 - python scripts to be used (located under `$AQML_ROOT/bin`): 
 
   - `gen_orca_jobs`: generate orca4 input files 
-    - e.g., `gen_orca_jobs -loose -t optg -m b3lyp -b vdz -n 1 frag_01.sdf`
+    - e.g., `gen_orca_jobs -loose -t optg -m b3lyp -b vdz -n 1 01.sdf`
  
   - `batch_orca`: run orca4 jobs 
  
@@ -17,7 +17,7 @@ As a demo, here we try to reproduce the black learning curve displayed in Figure
 
 
 - Timings 
- - Generation of amons: ~10^0 cpu seconds
- - DFT calculation: ~10^0 cpu minutes per amons, ~10^2 cpu minutes for target
- - AML: ~10^0 cpu seconds
+  - Generation of amons: ~10^0 cpu seconds
+  - DFT calculation: ~10^0 cpu minutes per amons, ~10^2 cpu minutes for target
+  - AML: ~10^0 cpu seconds
 
