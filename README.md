@@ -241,9 +241,9 @@ covering the four essential aspects of AML:
 
 If you have used `aqml` in your research, please consider citing these papers:
 
-[1] "Understanding molecular representations in machine learning: The role of uniqueness and target similarity", B. Huang, OAvL,J. Chem. Phys. (Communication) 145 161102 (2016), https://arxiv.org/abs/1608.06194
-[2] "Boosting quantum machine learning models with multi-level combination technique: Pople diagrams revisited" P. Zaspel, B. Huang, H. Harbrecht, OAvL submitted to JCTC (2018) https://arxiv.org/abs/1808.02799
-[3] "The DNA of chemistry: Scalable quantum machine learning with amons", B. Huang, OAvL, arXiv:1707.04146, 2017, https://arxiv.org/abs/1707.04146
+1. "Understanding molecular representations in machine learning: The role of uniqueness and target similarity", B. Huang, OAvL,J. Chem. Phys. (Communication) 145 161102 (2016), https://arxiv.org/abs/1608.06194
+2. "Boosting quantum machine learning models with multi-level combination technique: Pople diagrams revisited" P. Zaspel, B. Huang, H. Harbrecht, OAvL submitted to JCTC (2018) https://arxiv.org/abs/1808.02799
+3. "The DNA of chemistry: Scalable quantum machine learning with amons", B. Huang, OAvL, arXiv:1707.04146, 2017, https://arxiv.org/abs/1707.04146
 
 ```bash
 @article{BAML,
