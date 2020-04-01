@@ -1,6 +1,6 @@
 
 
-As a demo, here we try to reproduce the black learning curve displayed in Figure~S11B of reference 3 (see `$AQML_ROOT/README.md`, i.e., the amons paper).
+As a demo, here we try to reproduce the black learning curve displayed in Figure S11B of reference 3 (i.e., the amons paper, see `$AQML_ROOT/README.md`).
 
 - prerequisite: `orca4` has to be acquired (One has to fill the registration form at https://cec.mpg.de/orcadownload/ before obtaining a copy).
 
