@@ -1,1 +1,144 @@
-../../../bin/genamon_rdkit
+#!/usr/bin/env python
+
+import aqml.cheminfo.algo.amon as coa
+import aqml.cheminfo.algo.amon_mpi as coa2
+import os, sys, time
+import argparse as ap
+
+ps = ap.ArgumentParser()
+
+
+
+T,F = True,False
+dic =  {'T':T, 't':T, 'F':F, 'f':F}
+sdic = {T:'T', F:'F'}
+
+hs = ['size of covalent amons. Default: 7',
+        'size of vdw amons. Default: 7' ]
+for i,key in enumerate(['k','k2']):
+    ps.add_argument('-'+key, nargs='?', default=7, type=int, help=hs[i])
+
+ks1 = ['opr', 'ff', 'gopt', 'label']
+vs1 = ['.le.', 'mmff94', 'rkff', 'auto']
+hs1 = [' specify the size of amons to be generated. E.g., "-opr .le. -k 5" generates amons with no more than 5 heavy atoms (excluding hydrogen atoms)',
+       ' forcefield to be used for geometry optimization. Default: mmff94',
+       ' initial geometry optimizer. Default: rkff, i.e., forcefield methods in rdkit',
+       ' label for the output amons, to be used as filename if ouput option is desired. Default: "auto", i.e., label is automatically determined based on the input options.']
+#_dic = {'opr':'.le.', 'ff':'mmff94', 'gopt':'rkff', 'label':'auto'}
+for i,key in enumerate(ks1): #key in _dic.keys():
+    val = vs1[i] # _dic[key]
+    ps.add_argument('-'+key, nargs='?', default=val, type=str, help=hs1[i])
+
+ps.add_argument('-np', '-nproc', '-nprocs', dest='nprocs', nargs='?', default=1, type=int, help='number of processes to be used. Default: 1')
+ps.add_argument('-nmaxcomb', nargs='?', default=3, type=int, help='number of max combinations of covalent amons for vdw amons, Default: 3')
+ps.add_argument('-thresh', nargs='?', default=0.01, type=float, help='Given a new amon conformer, if the CM-based distances between this amon and all other conformers are greater than the threshold value, then it is accepted as a new amon conformer. Default: 0.01')
+ps.add_argument('ipts', nargs='*', type=str, help='SMILES strings or sdf/mol/pdb files')
+
+
+ks2 = ['saveg', 'reuseg']
+hs2 = ['save calculated mol graph, path lengths for target mol',
+        'load g, pls from previously saved graph file']
+
+ks2 += ['g', 'verbose', 'iwarn', 'ra','iextl','debug',]
+hs2 += [ 'generate amon graphs only',
+        'print detailed outputs of the program',
+        'print warning message',
+        'reduce number of amons (full geom opt by ff), default: F',
+        'include extended larger amons (N_I>7), default: F',
+        'debug the code']
+ks2 += [ 'static', 'fixgeom', 'iflexout', 'ivdw','ivao', 'keepHalogen',]
+hs2 += [ 'generate satic amons, default: F',
+         'generate satic amons, default: F',
+        'remove flexible amons',
+        'turn on non-covalent interaction (i.e., generate vdw amons as well)', 
+        'generate vdw amons only',
+        'keep H-X mol as amons, where X=halogen atom' ] # help strings
+for i,key in enumerate(ks2):
+    ps.add_argument('-'+key, action='store_true', help=hs2[i])
+
+
+ps.add_argument('-mpi', action='store_true', help='gen amons in parallel for many targets')
+
+#ks3 = [ 'icc4Rsp3out', 'iasp2arout', 'nogc', ]
+#hs3 = [' remove amons containing pattern [^2]~[^2]~[^2]~[^2]~[^3]',
+#        'remove amons containing patter [a]~[^2]',
+#        'no geometry clash allowed']
+#for i,key in enumerate(ks3):
+#    ps.add_argument('-'+key, action='store_true', help=hs3[i])
+irddtout =     F 
+icc4Rsp3out =  F 
+iasp2arout =   F 
+nogc =         F 
+ioc =          F 
+
+
+ag = ps.parse_args() # sys.argv[1:] )
+
+
+imap = T # write mapping file, which contains the amon idxs for all queries, default: T
+
+icrl2o = T  # preserve at most n-2 atoms for conjugated ring made up of n atoms, default: T
+igchk = T   # check geometry, default: T',]
+
+iocn = F # must include O=CN in amons, default: F
+
+
+
+ioc = T # must include O=C substructure as in the query, default: T
+## reset params
+if ag.iflexout: #noextra:
+    irddtout = T # 'F'
+    icc4Rsp3out =  T #'F'
+    iasp2arout =  T #'F'
+    nogc =  T #'F'
+    print('  ##### Param changed: irddtout,icc4Rsp3out,iasp2arout,nogc rest to T')
+
+
+
+args = ag.ipts
+if len(args) < 100:
+  print(' -- now excuting %s'%( ' '.join(sys.argv[:]) ) )
+
+
+nocrowd = F # skip crowded amons, default: F
+wg = F # write 3d geometry to files
+i3d = F
+
+
+t0 = time.time()
+objs = []
+for arg in args:
+    if arg[-3:] in ['smi']:
+        for _si in open(arg).readlines():
+            si = _si.strip()
+            if si != '': objs.append(si)
+    elif arg[-3:] in ['sdf', 'mol', 'pdb']:
+        assert os.path.exists(arg), '#ERROR: file does not exist'
+        if not ag.g: i3d = T
+        objs += [arg]
+    else: # SMILES
+        objs += [arg]
+
+
+if i3d:
+    wg = T
+    nocrowd = T
+
+
+#print('label=',ag.label)
+fixgeom = (ag.fixgeom or ag.static)
+func = coa.ParentMols 
+if ag.mpi:
+    func = coa2.ParentMols
+
+a = func(objs, reduce_namons=ag.ra, label=ag.label, imap=imap, fixGeom=fixgeom, \
+               iextl=ag.iextl, i3d=i3d, wg=wg, k=ag.k,k2=ag.k2, iprt=ag.verbose, \
+               gopt=ag.gopt, forcefield=ag.ff, nocrowd=nocrowd, irad=T, ichg=T, \
+               ioc=ioc, iocn=iocn, icrl2o=icrl2o, igchk=igchk, \
+               keepHalogen=ag.keepHalogen, irddtout=irddtout, ivdw=ag.ivdw, ivao=ag.ivao, 
+               nmaxcomb=ag.nmaxcomb, icc4Rsp3out=icc4Rsp3out, iasp2arout=iasp2arout, \
+               nogc=nogc, nprocs=ag.nprocs, opr=ag.opr, thresh=ag.thresh, debug=ag.debug, \
+               saveg=ag.saveg, reuseg=ag.reuseg, iwarn=ag.iwarn)
+#print(a.cans)
+print(' -- time elaped: ', time.time()-t0, ' seconds')
+

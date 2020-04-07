@@ -1,1 +1,37 @@
-../../../bin/batch_g09_robust
+#!/usr/bin/env python
+
+import os,sys
+
+def usage():
+  print('batch_g09 -nj 1 [-np 3] [files]')
+  sys.exit(2)
+
+args = sys.argv[1:]
+
+idx = 0
+
+keys = ['-nj', '-np']
+haskey = False
+for k in keys:
+  if k in args:
+    haskey = True
+    v = args[ args.index(k) + 1 ]; idx += 2
+if haskey:
+  nj = int(v)
+else:
+  nj = 1
+
+fs = args[idx:]
+
+nf = len(fs)
+nav = int(nf/nj + 1) if nf%nj > 0 else int( nf/nj)
+
+for i in range(nj):
+    i1 = i*nav; i2 = (i+1)*nav
+    if i2 > nf: i2 = nf
+    fsi = fs[i1:i2]
+    fstr = ' '.join(fsi)
+    cmd = 'batch_g09 %s >/dev/null &'%fstr
+    #print cmd
+    iok = os.system(cmd)
+

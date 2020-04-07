@@ -1,1 +1,36 @@
-../../../bin/batch_molpro_robust
+#!/usr/bin/env python
+
+import os,sys
+import util.stropr as so
+
+def usage():
+  print('batch_molpro -nj 1 -nthread 12 [files]')
+  sys.exit(2)
+
+args = sys.argv[1:]
+
+idx = 0
+
+keys = ['-nj','-njob']; hask,snj,idx = so.parser(args,keys,'1',idx,False)
+assert hask, '#ERROR: plz specify -nj num_of_jobs'
+nj = int(snj)
+
+keys = ['-np','-nproc',]; hask,snp,idx = so.parser(args,keys,'1',idx,False)
+
+keys = ['-nt','-nthread',]; hask,snt,idx = so.parser(args,keys,'1',idx,False)
+assert hask, '#ERROR: plz specify -nthread num_of_threads'
+
+fs = args[idx:]
+
+nf = len(fs)
+nav = int(nf/nj) + 1 if nf%nj > 0 else int(nf/nj)
+
+for i in range(nj):
+    i1 = i*nav; i2 = (i+1)*nav
+    if i2 > nf: i2 = nf
+    fsi = fs[i1:i2]
+    fstr = ' '.join(fsi)
+    cmd = 'batch_molpro -np %s -nt %s %s >/dev/null &'%(snp,snt,fstr)
+    #print cmd
+    iok = os.system(cmd)
+

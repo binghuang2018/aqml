@@ -1,1 +1,20 @@
-../../../bin/batch_orca_base
+#!/bin/bash
+
+fs=$*
+
+exe=/apps/orca/orca_4_0_1_2_linux_x86-64_openmpi202/orca 
+for f in $fs
+do
+  echo $f
+  b=${f%.com}
+  [[ ! -f $b.com ]] && { echo 'input file does not exist'; exit; }
+  if [ -e ${b}_0.com ]; then
+    $exe ${b}_0.com >${b}_0.out
+    if [ "$?" = "0" ]; then
+       $exe ${b}.com >${b}.out
+    fi
+  elif [ -e ${b}.com ]; then
+    $exe ${b}.com >${b}.out
+  fi
+done
+

@@ -1,1 +1,45 @@
-../../../bin/batch_molpro
+#!/usr/bin/env python
+
+import os,sys
+import util.stropr as so
+
+def molpro_done_check(f):
+  return 'Molpro calculation t' in open(f).readlines()[-1]
+
+def usage():
+  print('batch_molpro -par -np 6 [files]')
+  sys.exit(2)
+
+args = sys.argv[1:]
+
+idx = 0
+
+par = False
+keys=['-par', '-parallel']; par,idx = so.haskey(args,keys,idx)
+
+keys = ['-np','-nproc']; hask,snp,idx = so.parser(args,keys,'1',idx,False)
+keys=['-nt','-nthread']; hask,snt,idx = so.parser(args,keys,'1',idx,False)
+
+fs = args[idx:]
+
+home = os.environ['HOME']
+if not os.path.exists('%s/.molprorc'%home):
+  print(' Please create a file ~/.molprorc, and add sth like "-d data/scratch -I /data/scratch -W /data/scratch" to it')
+
+for f in fs:
+    fo = f[:-3]+'out'
+    if os.path.exists(fo):
+        if not molpro_done_check(fo): 
+            continue   
+    cmd0 = 'molpro -n %s -t %s %s &'%(snp, snt, f)
+    cmd0_2 = 'molpro -n %s -t %s %s'%(snp, snt, f)
+    if True: #carry_on:
+        if par:
+          iok = os.system(cmd0)
+        else:
+          iok = os.system(cmd0_2)
+
+        if iok > 0:
+            print(' ***** Job for < %s > failed'%f)
+
+

@@ -1,1 +1,193 @@
-../../../bin/aqml
+#!/usr/bin/env python
+
+import os, sys, time
+import aqml.io2 as io2
+import argparse as ap
+import cml.algo.aqml as aq
+import multiprocessing as mt
+
+T, F = True, False
+
+uc = io2.Units()
+
+
+def toidxs(li):
+    """ input = ['1', '2-3', '12-16'] (absolute idx)
+     -> output: [0, 1,2, 11,12,13,14,15] (Python idx) """
+    li2 = []
+    for idx in li:
+        if '-' in idx:
+            ib, ie = idx.split('-') # input mol idx starts from 1
+            for j in range(int(ib)-1,int(ie)):
+                if j not in li2:
+                    li2.append(j)
+        else:
+            j = int(idx)-1
+            if j not in li2:
+                li2.append(j)
+    return li2
+
+
+
+args = sys.argv[:]
+
+
+t0 = time.time()
+print('Running\n```bash')
+cmd = args[0]; opts = args[1:]
+print(' '.join([os.path.basename(cmd)]+opts), '\n```\ngives\n```bash\n')
+
+
+ps = ap.ArgumentParser()
+
+ps.add_argument('-prog', nargs='?', type=str, help='Ab-initio program used for calc mol props')
+
+ps.add_argument('-nprocs', '--nprocs', nargs='?', type=int, help='Number of threads to be used')
+
+ps.add_argument('-bj', dest='bj', action='store_true', help='manually add dft-d3 correction to energy?')
+ps.add_argument('-abc', dest='abc', action='store_true', help='manually add ATM correction to energy?')
+
+ps.add_argument('-p', '--property', dest='p', nargs='?', type=str, help='property to be trained/test')
+ps.add_argument('-z', dest='z', nargs='?', type=int, help='if `p is an atomic property, this option must be specified!')
+ps.add_argument('-fp', dest='fp', nargs='?', type=str, help='property file. If specified, properties would not be read from xyz file')
+
+ps.add_argument('-scu', dest='scu', nargs='?', type=str, default='atom', help='the smallest constituting unit of a mol. Defaulted to "atom", the other option is "group"')
+ps.add_argument('-wd', dest='w0', nargs='?', default='./', type=str, help='current working directory, default is "./"')
+
+ps.add_argument('-rcut','--rcut', nargs='?', default=4.8, type=float, help='SLATM cutoff radius, default is 4.8 Ang')
+ps.add_argument('-c','-coeffs', dest='coeffs', nargs='*', type=str, default=['1.0'], help='scaling factor for `dmax ')
+
+ps.add_argument('-k', '--kernel', dest='kernel', nargs='?', default='g', help='gaussian or lapalacian')
+ps.add_argument('-cab', action='store_true', help='calc atomic kernel between dissimilar atoms')
+ps.add_argument('-reusek','--reusek', dest='reusek', action='store_true', help=' (optional) load kernel from existing kernel file?')
+ps.add_argument('-savek','--savek', dest='savek', action='store_true', help=' (optional) save kernel or not?')
+
+ps.add_argument('-pbc', dest='pbc', action='store_true', help=' periodic boundary condition? T/F')
+
+ps.add_argument('-fk','--fk', dest='fk', type=str, nargs='?', help=' (optional) the file to which calculated kernel is to be saved')
+ps.add_argument('-savex','--savex', dest='savex', action='store_true')
+ps.add_argument('-reusex','--reusex', dest='reusex', action='store_true')
+ps.add_argument('-fx1','--fx1', dest='fx1', type=str, nargs='?', help=' (optional) filename of x_train (x: mol representation')
+ps.add_argument('-fx2','--fx2', dest='fx2', type=str, nargs='?', help=' (optional) filename of x_test (x: mol representation')
+
+ps.add_argument('-s1', '-train', dest='train', nargs='*', type=str, help='Name of the folder(s) containing all training mols')
+
+ps.add_argument('-exclude','-remove','--exclude','--remove', dest='_exclude', nargs='*', type=str, help='molecular idxs (for all mols, i.e., including mols from all training folders) to be excluded for training, could be either mol idx or "k8", meaning all amons having N_I=8')
+ps.add_argument('-keep','--keep', dest='_keep', nargs='*', type=str, help='molecular idxs (in the j-th training folder, where `j must be specified as a negative integer) to be kept for training, skip the rest. E.g., "-keep -1 35 40-49 -2 23-25" would keep mols with idx 35, 50-59 in ag.train[-1] and mols 23-25 in ag.train[-2]!')
+
+ps.add_argument('-l', '-lambda', '-lambdas', dest='lambdas', nargs='?', type=str, default='4.0', help='regularization parameter, Default: 4. Multiple values is possible through the string format of "4,8,10" and corresponding lambdas to be used are [10^{-n} for n in [4,8,10]]')
+
+ps.add_argument('-s2', '-test', dest='test', nargs='*', type=str, help='Name of the folder(s) containing all test molecules')
+ps.add_argument('-n2', '--n2', nargs='?', type=int, help='Number of test molecules; must be specified when no test folder ia avail')
+ps.add_argument('-i1by1', action='store_true', help='is training/test to be done 1 by 1?')
+ps.add_argument('-idx1', nargs='*', dest='_idx1', type=str, help='specify training set by idxs of mols')
+ps.add_argument('-idx2', nargs='*', dest='_idx2', type=str, help='specify test set by idxs of mols')
+ps.add_argument('-iaml', dest='iaml', nargs='?', default='T', type=str, help='use AML? Default: T')
+ps.add_argument('-i2', dest='i2', nargs='?', type=int, help='Target mol idx')
+ps.add_argument('-add', nargs='*', default=[], type=int, help='Idx of mols to be added for training, default is []')
+ps.add_argument('-dmxby', nargs='?', default='a', type=str, help='calc `dmax using amons/target/all?')
+ps.add_argument('-ref', nargs='?', type=str, help='folder containing a set of mols for regression of atomic reference energy')
+ps.add_argument('-iprta', action='store_true', help=' print predicted properties vs ref. values for each of the test mol')
+
+ps.add_argument('-ieaq', dest='i_disp_eaq', action='store_true', help='display energy of atoms in query mol(s)?')
+
+ps.add_argument('-debug', action='store_true', help='debug the code')
+
+ag = ps.parse_args() # sys.argv[1:] )
+
+if ag.nprocs is None:
+    ag.nprocs = mt.cpu_count()
+
+info = ''
+#for key in ['train',]:
+if ag.train is None:
+    info += ' --%s is missing\n'%key
+if info != '':
+    print(info)
+    raise Exception('Please comply!')
+
+exclude = []   
+nr = 0
+idso = ag._exclude
+if idso:
+    if len(idso)==1 and idso[0]=='k':
+        ag.exclude = int(idso[1:]) # str
+    else:
+        exclude = toidxs(ag._exclude)
+        nr = 1
+        if ag.debug:
+            print(' idx of mols to be removed:', exclude)
+        exclude = list(set(exclude))
+ag.exclude = exclude
+
+
+
+
+
+
+
+
+dirsk = []; idxsk = [] #keep = [] ##### aaaa
+nk = 0
+if ag._keep:
+    # first find id's of training dirs (specified as negative integer)
+    nk = 1
+    iis = []
+    for i,si in enumerate(ag._keep):
+        if si[0] == '-':
+            iis.append(i)
+            dirsk.append( int(si) )
+    #print('dirsk=',dirsk, 'iis=',iis, 'keep=',ag._keep)
+    ni = len(iis)
+    iis.append( len(ag._keep) )
+    for j in range(ni):
+        jb = iis[j]+1
+        je = iis[j+1]
+        #print('  j=',j, 'raw=', ag._keep[jb:je])
+        idxsk.append( toidxs(ag._keep[jb:je]) )
+    if ag.debug: 
+        for ik,dk in enumerate(dirsk):
+            print(' in folder %s, only these mols are to be kept:'%(ag.train[dk]), idxsk[ik], '(mol idx starts from 1)' )
+ag.dirsk = dirsk
+ag.idxsk = idxsk
+
+if nk and nr:
+    raise Exception(' -keep [...] and -exclude [...] cannot coexist!!')
+
+if ag.test is None:
+    ag.iaml = 'F'
+    if ag.n2 is not None:
+        ag.idx1 = []
+        ag.idx2 = np.arange(1,1+ag.n2)[::-1] * (-1)
+    elif ag._idx2 is not None:
+        assert ag._idx1 is not None, ' when "-idx2 {int}" is present, so should "-idx1 {int}"'
+    else:
+        raise Exception('#ERROR: For the case of no -test option being specified, "-n2 [INT]" or "-idx2 {INT}" must be present!')
+    ag.test = None
+
+idx1 = []
+idx2 = []
+if ag._idx1:
+    idx1 = toidxs(ag._idx1)
+if ag._idx2:
+    idx2 = toidxs(ag._idx2)
+ag.idx1 = idx1
+ag.idx2 = idx2
+
+
+
+if ag.fk:
+    ag.reusek = T
+
+if ag.fx1 or ag.fx2:
+    ag.reusex = T
+
+dct0 = {'T': T, 'F': F}
+ag.iaml = dct0[ag.iaml]
+
+
+obj = aq.calculator(ag=ag)
+obj.run()
+
+print(" elapsed time: ", time.time() - t0, " seconds\n```" )
+

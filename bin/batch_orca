@@ -1,1 +1,28 @@
-../../../bin/batch_orca
+#!/usr/bin/env python
+
+import os,sys
+
+def usage():
+  print('batch_g09 [-par] [files]')
+  sys.exit(2)
+
+T, F = True, False
+
+args = sys.argv[1:]
+
+idx = 0
+
+k = '-par'
+ipar = F
+if k in args:
+    ipar = T
+    idx += 1
+
+fs = args[idx:]
+nf = len(fs)
+for f in fs:
+    si = ' &' if ipar else ''
+    cmd = 'batch_orca_base %s%s'%(f,si)
+    #print cmd
+    iok = os.system(cmd)
+

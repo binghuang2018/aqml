@@ -1,0 +1,13 @@
+aqml
+batch_g09
+batch_g09_robust
+batch_molpro
+batch_molpro_robust
+batch_orca
+batch_orca_base
+batch_orca_robust
+genamon_oechem
+genamon_rdkit
+gen_molpro_jobs
+gen_orca_jobs
+orca2xyz
