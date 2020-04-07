@@ -58,7 +58,7 @@ The code was tested only under Linux/Mac OS.
 `aqml` is a python/fortran package that requires a number of dependencies:
 
 - `numpy` & `scipy`
-- `rdkit` or `oechem`: cheminformatic package (OEChem needs for an academic license, which is free though)
+- `rdkit` or `oechem`: cheminformatic package (`oechem` needs for an academic license, which is free though)
 - `networkx` a Python package for the creation, manipulation, and study of the structure, dynamics, and functions of complex networks. [https://networkx.github.io/documentation/stable/install.html]
 - `ase`: Atomic Simulation Environment [https://wiki.fysik.dtu.dk/ase/install.html]
 
@@ -68,7 +68,7 @@ optional:
 - `dftd3`: A dispersion correction for density functionals and other methods [https://www.chemie.uni-bonn.de/pctc/mulliken-center/software/dft-d3/get-the-current-version-of-dft-d3]
 - `imolecule`: draw mol interactively in jupyter-notebook (recommended)
 - `indigo`: cheminformatic package https://lifescience.opensource.epam.com/indigo/index.html#download-and-install
-- `openbabel`: cheminformatic package http://openbabel.org/wiki/Category:Installation
+- `openbabel`: cheminformatic package http://openbabel.org/wiki/Category:Installation (install through `conda install -y -c openbabel openbabel`)
 
 
 I recommend using `conda` (for Python 3.7+) to install all dependencies
@@ -81,52 +81,29 @@ Steps
 - miniconda or anaconda (go to https://docs.conda.io/projects/conda/en/latest/user-guide/install/ and follow the instructions there. Note that Python >=3.6 is preferred!)
 
 
-
-
-
-
-- rdkit
-```bash
-conda install -y -c rdkit rdkit 
-```
-
-- other dependencies
-```bash
-pip install ase imolecule networkx deepdish sympy
-```
-Note that `networkx>=2.4` seems not to work, so it's safer to run instead
-
-```bash
-pip install networkx==2.2
-```
-
 - clone the repository
 
 ```bash
 git clone https://github.com/binghuang2018/aqml.git
 ```
 
-- build & install aqml
+- build & install `aqml`
 ```bash
 cd aqml
 export AQML_ROOT=$PWD
-export CHEMPACK=RDKIT
+export CHEMPACK=OECHEM
 ./install.sh
 ```
 
-If you prefer to use OEChem, install the license file through
+when oechem is used , one has to also install the license file through
 ```bash
 echo "export OE_LICENSE=/path/to/oe_license.txt" >>~/.bashrc; source ~/.bashrc
 ```
 
+Alternatively, one can use `RDKit` by setting `export CHEMPACK=RDKIT`, however, relevant code is still buggy (for vdW systems only) and under development.
 
 Now you are ready to go!
 
-(optional) installation of other dependencies
-- openbabel
-```bash
-conda install -y -c openbabel openbabel 
-```
 
 
 # Usage
@@ -172,7 +149,7 @@ and a file `g6.out` summarizing the generated amons
         5   000006         2         9                                                      C=CC=CO
         6   000007         1        10                                                     c1ccccc1
 ```
-where `NI` indicates the number of heavy atoms, `im` is the index of unique amon (amon graph), `nc` is the number of conformers associated with each amon graph, `ic` is the cumulative index of amon conformers, `SMILES` is of OEChem standard.
+where `NI` indicates the number of heavy atoms, `im` is the index of unique amon (amon graph), `nc` is the number of conformers associated with each amon graph, `ic` is the cumulative index of amon conformers, `SMILES` is of oechem standard.
 
 Meanwhile, a folder `g6/` is also generated, containing the following files:
 ```bash
