@@ -71,14 +71,14 @@ optional:
 - `openbabel`: cheminformatic package http://openbabel.org/wiki/Category:Installation (install through `conda install -y -c openbabel openbabel`)
 
 
-I recommend using `conda` (for Python 3.7+) to install all dependencies
+I recommend using `conda` to install all dependencies
 
 
 ## Build & Install 
 
 Steps
 
-- miniconda or anaconda (go to https://docs.conda.io/projects/conda/en/latest/user-guide/install/ and follow the instructions there. Note that Python >=3.6 is preferred!)
+- miniconda or anaconda (go to https://docs.conda.io/projects/conda/en/latest/user-guide/install/ and follow the instructions there. Note that Python >=3.7 is preferred!)
 
 
 - clone the repository
