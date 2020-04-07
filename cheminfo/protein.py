@@ -1,5 +1,5 @@
 
-import cheminfo.RDKit as cio
+import aqml.cheminfo.RDKit as cio
 import numpy as np
 
 

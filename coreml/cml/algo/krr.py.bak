@@ -1,0 +1,305 @@
+#!/usr/bin/env python
+
+import os,sys
+import numpy as np
+from aqml.cheminfo import *
+from aqml.cheminfo.rw.xyz import *
+from representation.xb import get_nzs
+
+chemical_symbols = ['X',  'H',  'He', 'Li', 'Be',
+                    'B',  'C',  'N',  'O',  'F',
+                    'Ne', 'Na', 'Mg', 'Al', 'Si',
+                    'P',  'S',  'Cl', 'Ar', 'K',
+                    'Ca', 'Sc', 'Ti', 'V',  'Cr',
+                    'Mn', 'Fe', 'Co', 'Ni', 'Cu',
+                    'Zn', 'Ga', 'Ge', 'As', 'Se',
+                    'Br', 'Kr', 'Rb', 'Sr', 'Y',
+                    'Zr', 'Nb', 'Mo', 'Tc', 'Ru',
+                    'Rh', 'Pd', 'Ag', 'Cd', 'In',
+                    'Sn', 'Sb', 'Te', 'I',  'Xe',
+                    'Cs', 'Ba', 'La', 'Ce', 'Pr',
+                    'Yb', 'Lu', 'Hf', 'Ta', 'W',
+                    'Re', 'Os', 'Ir', 'Pt', 'Au',
+                    'Hg', 'Tl', 'Pb', 'Bi', 'Po',
+                    'At', 'Rn', 'Fr', 'Ra', 'Ac',
+                    'Th', 'Pa', 'U',  'Np', 'Pu',
+                    'Am', 'Cm', 'Bk', 'Cf', 'Es',
+                    'Fm', 'Md', 'No', 'Lr']
+s2z = dict( zip(chemical_symbols, range(len(chemical_symbols)) ) )
+
+pi2 = np.pi*np.pi
+a2b = 1.8897261258369282  # angstrom to bohr
+# e.g., for S, [ 1s^2 2s^2 2px^2 2py^2 2pz^2 ], i.e., 5 subshells
+n0 = 0
+nshl_core = {1:0, 2:0, 3:1, 4:1, 5:1, 6:1+n0, 7:1+n0, 8:1+n0, 9:1+n0, 16:5+n0, 17:5+n0}
+
+np.set_printoptions(precision=2)
+
+
+class krr(object):
+
+    def __init__(self, ys):
+        _ys = np.array(ys)
+        self._ys = _ys
+        assert np.logical_not(np.any(np.isnan(_ys))), '#ERROR: property is NaN, check your sdf file'
+        self.nm = len(ys)
+        # initialize test set size `n2 to 0
+        self.n2 = 0
+
+    def init_m(self, obj):
+        """ initialize molecules """
+        #assert type(obj) is molecules
+        self._zsu = np.unique( obj.zs )
+        self._zs = obj.zs
+        self._nas = obj.nas
+        self._nsheav = obj.nsheav
+        self._coords = obj.coords
+        _ias2 = np.cumsum(self._nas)
+        _ias1 = np.array([0,]+list(_ias2[:-1]),np.int)
+        self._ias1 = _ias1
+        self._ias2 = _ias2
+        # get energy of dressed atom
+        self._nzs = get_nzs(_ias1,_ias2,self._zs,self._zsu)
+
+    def get_idx(self,idx=-1,n1s=[],n1max=-1,seed1=1,namin=1,namax=7):
+        """
+        get training/test idx
+
+        i) AML: idx=-n ([n] target mols)
+                namax=0 -> one training set, i.e., all amons
+                namax=7 -> 7 training sets, the i-th set is {N_I = i} (i=1,2,...,7)
+                namax=-5 -> one training set, comprising of all amons with N_I <= -namax
+        ii) random sampling: idx>0 (__not__ quite useful?!)
+        iii) manually select training set: idx=[0,3,10,...],
+        """
+
+        if isinstance(idx,int):
+            if idx == 0:
+                # only k1 is to be calculated, then we can randomly choose training data
+                # from the molecules and shuffle many times to make an averaged LC
+                _idx1 = np.arange(self.nm)
+                idx2 = []
+            elif idx > 0:
+                np.random.seed(seed1) # fix the random sequence
+                tidxs = np.random.permutation(self.nm)
+                _idx1 = tidxs[:-idx]; idx2 = tidxs[-idx:]
+                if n1max > 0:
+                    _idx1 = _idx1[:n1max] # choose a subset
+            else:
+                tidxs = np.arange(self.nm); _idx1 = tidxs[:idx]; idx2 = tidxs[idx:]
+        elif isinstance(idx,list):
+            # idx as the maximal training set
+            _idx1 = np.array(idx,np.int)
+            tidxs = np.arange(self.nm)
+            idx2 = np.setdiff1d(tidxs,_idx1)
+        else:
+            raise '#ERROR: unsupported type of `idx'
+
+        n2 = len(idx2) # now test set is fixed!!
+        self.n2 = n2
+
+        # now get smaller training set sizes
+        nsu_heav = np.unique( self._nsheav ) # already in ascending order
+        self.nsu_heav = nsu_heav
+        idx1 = _idx1
+        nn1 = len(n1s)
+        aml = False
+        if namax == 0:
+            if nn1 == 0:
+                # use only one training set, including all amons
+                idxs1 = [_idx1]
+            else:
+                idxs1 = [ _idx1[:n1] for n1 in n1s ]
+        elif namax < 0:
+            # use only one training set, {N_I <= -namax}
+            aml = True
+            idx1 = _idx1[ np.logical_and(self._nsheav[_idx1]>=namin, self._nsheav[_idx1] <= -namax) ]
+            idxs1 = [idx1]; n1s = [len(idx1)]
+        else:
+            # use `namax-`namin+1 training sets to generate a LC
+            idxs1 = []
+            aml = True
+            n1s = []
+            # Note that `nheav may not be of the same order as the mol idx in filename,
+            # so we'd better sort the idx of filenames! E.g., na=5 in frag_01.xyz while na=3 in frag_05.xyz
+            idx1_sorted = []
+            t = self._nsheav[_idx1]
+            cnt = 0
+            for i in range(len(nsu_heav)):
+                nui = nsu_heav[i]
+                #print ' ** nui, _nsheav, _idx1 = ', nui, self._nsheav, _idx1
+                if nui >= namin and nui <= namax:
+                    idx_i = _idx1[t == nui]
+                    ni = len(idx_i)
+                    idx1_sorted += list(idx_i)
+                    cnt += ni
+                    n1s.append(cnt)
+            idx1 = idx1_sorted
+        self.aml = aml
+        self.n1s = n1s
+
+        tidx = np.concatenate((idx1,idx2)).astype(np.int)
+        n1,n2 = len(idx1),len(idx2)
+        nt = n1+n2
+        self.ys = self._ys[tidx]
+
+        null = np.array([],np.int)
+        _nas = self._nas[tidx]
+        _coords = []; _zs = []
+        for i1 in tidx:
+            ib1,ie1 = self._ias1[i1],self._ias2[i1]
+            _coords += list(self._coords[ib1:ie1])
+            _zs += list(self._zs[ib1:ie1])
+        _coords = np.array(_coords)
+        _zs = np.array(_zs,np.int)
+
+        self.nas1 = _nas[:n1]
+        self.nas2 = null if n2 == 0 else _nas[n1:]
+        self.nas = _nas
+
+        self.nzs = self._nzs[tidx]
+        self.nsheav = self._nsheav[tidx]
+
+        # atomic index
+        ias_e = np.cumsum(_nas)
+        ias_b = np.concatenate(([0],ias_e[:-1]))
+        ias1 = np.concatenate( [ np.arange(ias_b[i],ias_e[i]) for i in range(n1) ] )
+        ias2 = null if n2 == 0 else np.concatenate( [ np.arange(ias_b[i],ias_e[i]) for i in range(n1,nt) ] )
+        iast = np.concatenate((ias1,ias2))
+        self.coords = _coords[iast]
+        self.zs1 = _zs[ias1]
+        self.zs2 = _zs[ias2]
+        self.zs = np.concatenate((self.zs1,self.zs2))
+        self.nat1 = len(ias1)
+        self.nat2 = len(ias2)
+
+
+    def calc_ae_dressed(self,nzs1,ys1,nzs2,ys2):
+        esb = np.linalg.lstsq(nzs1,ys1,rcond=None)[0]
+        ys1p = np.dot(nzs1,esb)
+        #print ' +++++ ys1.shape, ys1p.shape = ', ys1.shape, ys1p.shape
+        dys1 = ys1 - ys1p
+        ys2_base = np.dot(nzs2,esb)
+        dys2 = ys2 - ys2_base
+        return dys1,dys2, ys2_base
+
+
+    def run(self, mks, case=0, usek1o=False, _n1s=None, _n2=None, _seeds1=[None],
+            usebl=True, llambda=1e-10, iprt=True):
+        """do KRR training & test
+
+        vars
+        ================
+        case 1: 
+        usek1o : use k1 only? Used for random sampling
+        _seed2 : used to choose a fixed test set (with size `_n2)
+                 if usek1o=True or self.n2=0
+        _seed1 : used to shuffle the training set if usek1o=T and
+                 self.n2=0
+        _n2    :
+
+
+        """
+        if isinstance(mks, (list,tuple)):
+            tmpk1,tmpk2 = mks;
+        elif isinstance(mks, str):
+            if os.path.exists(mks):
+                dic = np.load(mks)
+                tmpk1,tmpk2 = [ dic[key].copy() for key in ['k1','k2'] ]
+        else:
+            raise '#ERROR: unknow input'
+        _mk1,_mk2 = tmpk1.copy(), tmpk2.copy()
+
+        if self.n2==0: usek1o = True
+        _maes = []; _rmses = []
+        nshuffle = len(_seeds1)
+        for _seed1 in _seeds1:
+            maesi = []; rmsesi = []
+            if usek1o:
+                assert _n1s is not None, '#ERROR: plz specify `_n1s!!'
+                n1s = _n1s
+                assert _n2 is not None, '#ERROR: plz specify `_n2'
+                n2 = _n2
+                assert _idx2 is not None, '#ERROR: plz specify `_idx2'
+                tidxs = np.arange(self.nm)
+                # get fixed test set
+                idx2 = _idx2
+                # get the whole training set idx
+                _idx1 = np.setdiff1d(tidxs,idx2)
+            else:
+                mk1 = _mk1; mk2 = _mk2
+                n1s = self.n1s; n2 = self.n2
+                tidxs = np.arange(self.nm)
+                _idx1 = tidxs[:-n2]; idx2 = tidxs[-n2:]
+
+            if _n1s is not None: n1s = _n1s
+            # now shuffle the training set
+            if _seed1 is not None:
+                np.random.seed(_seed1)
+                idx1 = np.random.permutation(_idx1)
+            else:
+                idx1 = _idx1
+            mk1 = _mk1[idx1][:,idx1]
+            if usek1o:
+                mk2 = _mk1[idx2][:,idx1]
+            else:
+                mk2 = _mk2[:,idx1]
+
+            #print ' ++ ', len(idx1),len(idx2), self.ys.shape
+            _ys1 = self.ys[idx1]
+            _ys2 = self.ys[idx2]
+            if usebl:
+                _nzs1 = self.nzs[idx1]
+                _nzs2 = self.nzs[idx2]
+
+            ys2_ps = []
+            maes = []; rmses = []
+            for i,n1 in enumerate(n1s):
+                ys1i = _ys1[:n1]
+                ys2i = _ys2
+                #print 'ys1i.shape = ', ys1i.shape; print 'ys2i.shape = ', ys2i.shape
+                if usebl:
+                    nzs1 = _nzs1[:n1]
+                    nzs2 = _nzs2
+                    if not np.all( [ si > 1 for si in nzs1.shape ] ): continue
+                    ys1, ys2, ys2_base = self.calc_ae_dressed(nzs1,ys1i,nzs2,ys2i)
+                else:
+                    ys1, ys2 = ys1i, ys2i
+                #print 'ys1 = ', ys1; print 'ys2 = ', ys2
+                k1 = mk1[:n1][:,:n1]
+                k1[np.diag_indices_from(k1)] += llambda
+                alphas = np.linalg.solve(k1,ys1)
+                k2 = mk2[:,:n1]
+                #print ' k2.shape = ', k2.shape
+                ys2_p = np.dot(k2,alphas)
+                ys2_ps.append( ys2_p + ys2_base )
+                #print 'ys2_p = ', ys2_p
+                dys = ys2_p-ys2
+                dysa = np.abs(dys)
+                errmax = np.unique( dys[np.max(dysa)==dysa] )[0]
+                if n2 == 1:
+                    mae = dys[0]; rmse = abs(mae)
+                else:
+                    mae = np.sum(np.abs(dys))/n2
+                    rmse = np.sqrt(np.sum(dys*dys)/n2)
+                if iprt:
+                    #if self.aml:
+                    #    nha = self.nsu_heav[i]
+                    #    print '%6d %6d %12.4f %12.4f'%(nha,n1,mae,rmse)
+                    #else:
+                    print '%6d %12.4f %12.4f %12.4f'%(n1,mae,rmse,errmax)
+                    #print '     dys = ', np.squeeze(dys)
+                maesi.append(mae)
+                rmsesi.append(rmse)
+            _maes.append( maesi )
+            _rmses.append( rmsesi )
+            self.ys2_ps = ys2_ps
+        _maes= np.array(_maes)
+        _rmses = np.array(_rmses)
+
+        maes = np.sum(_maes,axis=0)/nshuffle
+        rmses = np.sqrt( np.sum(_rmses**2/nshuffle, axis=0) )
+        self.maes = maes
+        self.rmses = rmses
+
+

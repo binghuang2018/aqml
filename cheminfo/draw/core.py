@@ -1,13 +1,13 @@
 
 
-from cheminfo.core import *
+from aqml.cheminfo.core import *
 
 from rdkit import Chem
 from rdkit.Chem.Draw import IPythonConsole
 from rdkit.Chem import Draw
 
 from openeye import oechem
-from cheminfo.oechem.oechem import *
+from aqml.cheminfo.oechem.oechem import *
 
 from IPython.display import SVG, display, HTML
 from rdkit.Chem import AllChem as Chem

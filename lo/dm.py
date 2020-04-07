@@ -2,9 +2,9 @@
 
 import numpy as np
 from pyscf import lib, gto, scf, dft, cc, ao2mo
-from cheminfo.core import *
-#from cheminfo.molecule.core import *
-from cheminfo.lo.rotate import *
+from aqml.cheminfo.core import *
+#from aqml.cheminfo.molecule.core import *
+from aqml.cheminfo.lo.rotate import *
 from ase import Atoms
 import ase.io as aio
 import os, sys, io2
@@ -23,14 +23,15 @@ h2kc = UN.h2kc
 
 class density_matrix(object):
 
-    def __init__(self, zs, coords, ihao=T, output=None, basis='sto-3g', meth='b3lyp', spin=0, verbose=3, iprt=False):
+    def __init__(self, m, ihao=T, output=None, basis='sto-3g', \
+                 meth='b3lyp', spin=0, verbose=3, iprt=False):
         """
         get dm1
         """
         self.meth = meth
         self.iprt = iprt
-        self.zs = zs
-        self.coords = coords
+        self.zs = m.zs
+        self.coords = m.coords
         self.ds = ssd.squareform( ssd.pdist(coords) )
 
         na = len(zs)

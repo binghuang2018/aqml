@@ -4,10 +4,10 @@ import tempfile as tpf
 import os, sys, re, copy, ase
 import numpy as np
 import itertools as itl
-import cheminfo.oechem.oechem as coo
-import cheminfo as co
-import cheminfo.graph as cg
-import cheminfo.oechem.core as coc
+import aqml.cheminfo.oechem.oechem as coo
+import aqml.cheminfo as co
+import aqml.cheminfo.graph as cg
+import aqml.cheminfo.oechem.core as coc
 import scipy.spatial.distance as ssd
 
 T, F = True, False

@@ -4,7 +4,7 @@ from mayavi import mlab
 import ase.io.cube as aic
 from ase.data import covalent_radii
 from ase.data.colors import cpk_colors
-from cheminfo.molecule.core import *
+from aqml.cheminfo.molecule.core import *
 
 dc = {'red':(1,0,0), 'green':(0,1,0), 'blue':(0,0,1), 'gray':(0.5,0.5,0.5)}
 

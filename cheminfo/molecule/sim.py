@@ -4,9 +4,9 @@ import contextlib
 import multiprocessing
 import numpy as np
 import scipy.spatial.distance as ssd
-import cheminfo.core as cc
-import cheminfo.molecule.nbody as MB
-import cheminfo.molecule.core as cmc
+import aqml.cheminfo.core as cc
+import aqml.cheminfo.molecule.nbody as MB
+import aqml.cheminfo.molecule.core as cmc
 import matplotlib.pylab as plt
 
 T, F = True, False

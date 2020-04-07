@@ -2,7 +2,7 @@
 
 import numpy as np
 from pyscf import lib, gto, scf, dft, cc, ao2mo
-from cheminfo.core import *
+from aqml.cheminfo.core import *
 import os, sys, io2
 import scipy.spatial.distance as ssd
 #import torch

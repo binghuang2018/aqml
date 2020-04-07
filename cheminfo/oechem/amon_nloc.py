@@ -8,21 +8,21 @@ from openeye.oechem import *
 import numpy as np
 import networkx.algorithms.isomorphism  as iso
 import networkx as nx
-import cheminfo.oechem.oechem as coo
-from cheminfo.molecule.subgraph import *
-import cheminfo.rdkit.core as cir
-from cheminfo.rw.ctab import write_ctab
+import aqml.cheminfo.oechem.oechem as coo
+from aqml.cheminfo.molecule.subgraph import *
+import aqml.cheminfo.rdkit.core as cir
+from aqml.cheminfo.rw.ctab import write_ctab
 from rdkit import Chem
 import scipy.spatial.distance as ssd
-import cheminfo.openbabel.obabel as cib
+import aqml.cheminfo.openbabel.obabel as cib
 import multiprocessing
-import cheminfo.core as cic
-import cheminfo.math as cim
-import deepdish as dd
+import aqml.cheminfo.core as cic
+import aqml.cheminfo.math as cim
+import cml.sd as dd
 import itertools as itl
 import tempfile as tpf
-import cheminfo.graph as cg
-from cheminfo.molecule.elements import Elements
+import aqml.cheminfo.graph as cg
+from aqml.cheminfo.molecule.elements import Elements
 import cml.famoneib as fa
 
 
@@ -1539,7 +1539,7 @@ class ParentMols(object):
             if iat is not None:
                 fdn += '_iat%d'%iat # absolute idx
             fcan = fdn + '/' + fdn + '.can'
-            h5f = '%s/map.h5'%fdn
+            h5f = '%s/map.pkl'%fdn
         else:
             if label in ['auto']:
                 label = 'g%d'%k0
@@ -1549,7 +1549,7 @@ class ParentMols(object):
                 if self.iextl:
                     label += '_extl'
             fcan = label + '.can'
-            h5f = label + '/map.h5'
+            h5f = label + '/map.pkl'
             fdn = label
             for fd in [fdn, fdn+'/i-raw/']:
                 if not os.path.exists(fd):
@@ -1910,7 +1910,7 @@ class ParentMols(object):
                 cans = seta.cans
                 self.cans = cans
                 if label is not None:
-                    h5f = label + '.h5'
+                    h5f = label + '.pkl'
                     dd.io.save(h5f, {'ids': np.array(ids,dtype=int), 'maps': seta.maps2} )
 
 

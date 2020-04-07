@@ -3,21 +3,21 @@
 import networkx as nx
 import itertools as itl
 #import scipy.spatial.distance as ssd
-import cheminfo.molecule.elements as cce
+import aqml.cheminfo.molecule.elements as cce
 import numpy as np
 import os, sys, re, copy
-from cheminfo.molecule.elements import Elements
-from cheminfo.molecule.nbody import NBody
-from cheminfo.rw.ctab import write_ctab
-from cheminfo.rw.pdb import write_pdb
-import cheminfo.math as cm
+from aqml.cheminfo.molecule.elements import Elements
+from aqml.cheminfo.molecule.nbody import NBody
+from aqml.cheminfo.rw.ctab import write_ctab
+from aqml.cheminfo.rw.pdb import write_pdb
+import aqml.cheminfo.math as cm
 from rdkit import Chem
-#import cheminfo.rdkit.amon_f as craf
-import cheminfo.graph as cg
+#import aqml.cheminfo.rdkit.amon_f as craf
+import aqml.cheminfo.graph as cg
 try:
-    import cheminfo.fortran.famon as cf
+    import aqml.cheminfo.fortran.famon as cf
 except:
-    import cheminfo.fortran.famon_mac as cf
+    import aqml.cheminfo.fortran.famon_mac as cf
 
 global T,F
 T=True; F=False
@@ -677,7 +677,7 @@ if __name__ == "__main__":
     import sys
     import ase.io as aio
     import tempfile as tpf
-    import cheminfo.rdkit.RDKit as cir
+    import aqml.cheminfo.rdkit.RDKit as cir
 
     args1 = sys.argv[1:]
 

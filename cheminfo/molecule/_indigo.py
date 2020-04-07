@@ -2,13 +2,13 @@
 import os,sys,re
 import numpy as np
 import indigo
-from cheminfo.core import *
-from cheminfo.molecule.core import *
-from cheminfo.molecule.molecule import *
+from aqml.cheminfo.core import *
+from aqml.cheminfo.molecule.core import *
+from aqml.cheminfo.molecule.molecule import *
 try:
-  import cheminfo.fortran.famon as cf
+  import aqml.cheminfo.fortran.famon as cf
 except:
-  import cheminfo.fortran.famon_mac as cf
+  import aqml.cheminfo.fortran.famon_mac as cf
 
 #__all__ = [ 'get_bo_matrix', 'states', '_indigo' ]
 

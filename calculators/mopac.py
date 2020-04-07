@@ -16,7 +16,7 @@ from ase import Atoms
 from ase.calculators.calculator import FileIOCalculator, ReadError, Parameters
 from ase.units import kcal, mol, Debye
 import ase.io as aio
-import cheminfo.rw.xyz as rwx
+import aqml.cheminfo.rw.xyz as rwx
 
 def get_index(lines, pattern):
     for i, line in enumerate(lines):

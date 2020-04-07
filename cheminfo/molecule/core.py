@@ -6,11 +6,11 @@ try:
   import indigo
 except:
   pass
-import cheminfo as co
-import cheminfo.graph as cg
+import aqml.cheminfo as co
+import aqml.cheminfo.graph as cg
 import networkx as nx
-import cheminfo.molecule.geometry as cmg
-from cheminfo.molecule.elements import Elements
+import aqml.cheminfo.molecule.geometry as cmg
+from aqml.cheminfo.molecule.elements import Elements
 
 #__all__ = [ 'rawmol_indigo' ]
 
@@ -20,7 +20,7 @@ T,F = True,False
 class Graph(object):
 
     def __init__(self, g):
-        self.na = g.shape[0] # number_of_nodes
+
         g1 = (g > 0).astype(np.int)
         np.fill_diagonal(g1, 0)
         self.g1 = g1
@@ -37,10 +37,11 @@ class Graph(object):
 
     def get_pls(self):
         """ calc shortest path lengths """
-        pls = -1 * np.ones((self.na, self.na))
-        np.fill_diagonal(pls,[0]*self.na)
-        for i in range(self.na):
-            for j in range(i+1,self.na):
+        _na = g.shape[0] # number_of_nodes
+        pls = -1 * np.ones((_na, _na))
+        np.fill_diagonal(pls,[0]*_na)
+        for i in range(_na):
+            for j in range(i+1,_na):
                 if nx.has_path(self.gnx,i,j):
                     pls[i,j]=pls[j,i]=nx.shortest_path_length(self.gnx,i,j)
         return pls
@@ -62,6 +63,10 @@ class Graph(object):
         return paths
 
 
+
+
+
+
 class RawMol(Graph):
 
     def __init__(self, obj, ivdw=False, scale=1.0, iprt=F):
@@ -77,14 +82,14 @@ class RawMol(Graph):
         self.obj = obj
         self.iprt = iprt
         self.scale = scale
-        self.coords = np.array(coords)
-        self.zs = np.array(zs, np.int)
+        self._coords = np.array(coords)
+        self._zs = np.array(zs, np.int)
         self.symbols = [ co.chemical_symbols[zi] for zi in zs ]
-        self.na = len(zs)
-        self.ias = np.arange(self.na)
+        self._na = len(zs)
+        self._ias = np.arange(self._na)
         self.pt = Elements( list(zs) )
 
-        self.cns0 = np.array([ co.cnsr[zi] for zi in self.zs ], dtype=int)
+        self.cns0 = np.array([ co.cnsr[zi] for zi in self._zs ], dtype=int)
 
         self.connect()
         #if (not self.is_connected) or ivdw:
@@ -94,7 +99,7 @@ class RawMol(Graph):
         """
         establish connectivity between atoms from geometry __ONLY__
         """
-        ps = self.coords
+        ps = self._coords
         rs = self.pt.rcs
         rmax = rs.max()
         ds = np.sqrt((np.square(ps[:,np.newaxis]-ps).sum(axis=2)))
@@ -111,13 +116,13 @@ class RawMol(Graph):
 
         # step 2) refine the g
         maxnbs = self.pt.maxnbs
-        for ia in range(self.na):
-            zi = self.zs[ia]
+        for ia in range(self._na):
+            zi = self._zs[ia]
             if zi == 1:
                 if g[ia].sum() > 1:
-                    jas = self.ias[g[ia]>0]
-                    if 1 in self.zs[jas]:
-                        ja = jas[ self.zs[jas]==1 ]
+                    jas = self._ias[g[ia]>0]
+                    if 1 in self._zs[jas]:
+                        ja = jas[ self._zs[jas]==1 ]
                     else:
                         # remove the longer bond
                         ds2i = ds2[ia,jas]
@@ -139,7 +144,7 @@ class RawMol(Graph):
                     if (cns[ia] > maxnbs[ia] or angmin < 45): # 50.0):
                         #some bond exceeds max valence
                         #now remove the bond with max bond length
-                        jas = self.ias[g[ia]>0]
+                        jas = self._ias[g[ia]>0]
                         dsj = ds[ia,jas]
                         ja = jas[dsj==np.max(dsj)][0]
                         g[ia,ja] = g[ja,ia] = 0
@@ -163,11 +168,11 @@ class RawMol(Graph):
 
     def get_nscu(self):
         cns = self.g.sum(axis=0)
-        zs = self.zs
+        zs = self._zs
 
         scus = {}
 
-        ias2 = self.ias[ np.logical_and(cns==2, zs==6) ] # now ...=C=C=...
+        ias2 = self._ias[ np.logical_and(cns==2, zs==6) ] # now ...=C=C=...
         g1 = self.g[ias2][:,ias2]
         clqs = []
         if len(g1)>0:
@@ -180,16 +185,16 @@ class RawMol(Graph):
                     jas = []
 
         vis1 = set() # visited nodes
-        ias1 = self.ias[ np.logical_and(cns==1, zs>1) ]
+        ias1 = self._ias[ np.logical_and(cns==1, zs>1) ]
         for ia1 in ias1:
             if ia1 in vis1: continue
             z1 = zs[ia1]
-            jas = self.ias[self.g[ia1]>0]
+            jas = self._ias[self.g[ia1]>0]
             if z1 in [8,16,34,52]:
                 assert len(jas)==1
                 ja = jas[0]
                 nnbr1 = self.g[ja,ias1].sum()
-                #nbrsj = self.ias[self.g[ja]>0]
+                #nbrsj = self._ias[self.g[ja]>0]
                 if nnbr1 == 1:
                     t = [ co.chemical_symbols[zi] for zi in [zs[ia1],zs[ja]] ]
                     seti = [ia1,ja]
@@ -219,7 +224,7 @@ class RawMol(Graph):
             else:
                 scus[scu].append( set(seti) )
 
-        iasr = np.setdiff1d(self.ias, list(vis1))
+        iasr = np.setdiff1d(self._ias, list(vis1))
         for ia in iasr:
             scu = '%s%d'%( co.chemical_symbols[zs[ia]], cns[ia] )
             seti = [ia]
@@ -229,46 +234,46 @@ class RawMol(Graph):
                 scus[scu].append( set(seti) )
         return scus
 
-    def get_monomers(self):
+    def get_fragments(self):
         mols = []
         if self.is_connected:
-            mols = [ co.atoms(self.zs, self.coords) ]
+            mols = [ co.atoms(self._zs, self._coords) ]
         else:
             for sg in nx.connected_component_subgraphs(self.gnx):
                 idx = list(sg.nodes())
-                mols.append( co.atoms(self.zs[idx], self.coords[idx]) )
+                mols.append( co.atoms(self._zs[idx], self._coords[idx]) )
         return mols
 
     @property
-    def monomers(self):
-        if not hasattr(self, '_monomers'):
-            self._monomers = self.get_monomers()
-        return self._monomers
+    def fragments(self):
+        if not hasattr(self, '_fragments'):
+            self._fragments = self.get_fragments()
+        return self._fragments
 
 
     def connect_vdw_inter(self): #,scale=1.0):
         """
         add vdw bond between standalone submols in the system
         """
-        g2 = np.zeros((self.na,self.na))
+        g2 = np.zeros((self._na,self._na))
         if not self.is_connected:
             rvdws = np.array([ self.pt.rvdws ])
             rs2max = (rvdws+rvdws.T) * self.scale
             nncb = 0
-            for i in range(self.na):
-                for j in range(i+1,self.na):
+            for i in range(self._na):
+                for j in range(i+1,self._na):
                     if self.pls[i,j] < 0:
                         if rs2max[i,j] >= self.ds[i,j]:
                             g2[i,j]=g2[j,i]=1; nncb += 1
             # now check CN of hydrogen atoms
             cns2 = g2.sum(axis=0)
-            iash = self.ias[self.zs==1]
+            iash = self._ias[self._zs==1]
             nncb_r = 0 # number of bond to be removed
             for ia in iash:
                 msg = '#ERROR: multiple bonds detected for H-%d'%(ia+1)
                 if cns2[ia]>1: #msg
                     # now keep only the vdw bond with shortest length
-                    jas = self.ias[g2[ia]>0]
+                    jas = self._ias[g2[ia]>0]
                     dsj = self.ds[ia,jas]
                     seq = np.argsort(dsj)
                     _jas = jas[seq[1:]]
@@ -277,7 +282,7 @@ class RawMol(Graph):
                     g2[_jas,ia] = 0
                     cns2 = g2.sum(axis=0)
             # now break vdw bond between heavy atoms ??
-            ias_heav = self.ias[self.zs>1]
+            ias_heav = self._ias[self._zs>1]
             na_heav = len(ias_heav)
             for i in range(na_heav):
                 for j in range(i+1,na_heav):
@@ -300,7 +305,7 @@ class RawMol(Graph):
     def get_conj_envs(self):
         dvs = self.g.sum(axis=0) - self.cns0
         cond = (dvs < 0)
-        iasc = self.ias[cond] # map relative idx in `sg to absolute idx in parent mol
+        iasc = self._ias[cond] # map relative idx in `sg to absolute idx in parent mol
         sg = self.g[cond][:,cond]
         sgnx = nx.from_numpy_matrix(sg)
         sub_graphs = nx.connected_component_subgraphs(sgnx)
@@ -314,15 +319,15 @@ class RawMol(Graph):
             if nai == 1:
                 # e.g., O in O=PX3, O=[SX2]=O
                 a1 = csi[0]
-                for a2 in np.setdiff1d(self.ias[self.g[a1]>0], csi):
+                for a2 in np.setdiff1d(self._ias[self.g[a1]>0], csi):
                     if (dvs[a2] != 0) and (a2 not in csi):
                         csi.append( a2 )
             else:
                 # add neighboring atoms that are i) saturated and ii) one of N, O, P, S, As, Se
                 # e.g., N in -C(=O)N<, P in c1c[PH]cc1
                 for ia in csi:
-                    for ja in self.ias[self.g[ia]>0]:
-                        if (ja != ia) and (dvs[ja] == 0) and (self.zs[ja] in [7,8,15,16,33,34]) and (ja not in csi):
+                    for ja in self._ias[self.g[ia]>0]:
+                        if (ja != ia) and (dvs[ja] == 0) and (self._zs[ja] in [7,8,15,16,33,34]) and (ja not in csi):
                             csi += [ja]
             if len(csi) > 1:
                 #print('csi=', csi)
@@ -355,6 +360,9 @@ class RawMol(Graph):
 
     @property
     def cenvs(self):
+        """
+          conjugated environments
+        """
         if hasattr(self, '_cenvs'):
             cenvs = self._cenvs
         else:
@@ -363,6 +371,9 @@ class RawMol(Graph):
 
 
     def connect_conj(self):
+        """
+          connectivity matrix between conjugated atoms
+        """
         gc = np.logical_or( self.g, self.g2 )
         for csi in self.cenvs:
             nai = len(csi) #cg[np.ix_(csi,csi)] = 1
@@ -401,11 +412,11 @@ class RawMol(Graph):
         for envs in self.cenvs:
             cas += envs
 
-        cnshv = np.array([ (self.zs[self.g[i]>0]>1).sum() for i in self.ias ], dtype=int)
+        cnshv = np.array([ (self._zs[self.g[i]>0]>1).sum() for i in self._ias ], dtype=int)
 
         nbrs = []
         if ias is None:
-            ias = self.ias
+            ias = self._ias
         else:
             ias = np.array(ias, dtype=int) #- 1 #
             if itype in ['f','fortran']:
@@ -415,16 +426,16 @@ class RawMol(Graph):
         g3s = []
         for i in ias:
             g3i = g3[i]
-            cnbrs = [i]+list(self.ias[self.g[i]>0]) # connected neighbors
-            nnbrs = list(np.setdiff1d(self.ias, cnbrs)) # non-connected neighbors
+            cnbrs = [i]+list(self._ias[self.g[i]>0]) # connected neighbors
+            nnbrs = list(np.setdiff1d(self._ias, cnbrs)) # non-connected neighbors
             if dvs[i] == 0:
                 if i not in cas:
-                    if self.zs[i] in [6,14]: # for C or Si-sp3, no matter what
+                    if self._zs[i] in [6,14]: # for C or Si-sp3, no matter what
                         ias_only_nbrs.append( i )
                         for j in nnbrs:
                             g3i[j] = 0
                             #print(' ** i,j=',i,j, ' set gij=0')
-                    elif self.zs[i] in [8,]: # e.g., O in >[P(=O)]O[P(=O)]<
+                    elif self._zs[i] in [8,]: # e.g., O in >[P(=O)]O[P(=O)]<
                         if cnshv[i] == 2:
                             # now find the neighbors which is in contact with `i and in a conjugated env
                             nbrs2 = []
@@ -433,12 +444,12 @@ class RawMol(Graph):
                                     nbrs2 += self.cenvs[ self.acmap[j] ]
                             for j in nbrs2:
                                 g3i[j] = 1
-                            for j in np.setdiff1d(self.ias, cnbrs+nbrs2):
+                            for j in np.setdiff1d(self._ias, cnbrs+nbrs2):
                                 g3i[j] = 0 # previously, it's set to 1 as r_ij < r_i^vdw + r_j^vdw
                                 #print(' ***** i,j=',i,j, ' set gij=0')
             else:
                 # e.g., >[PX]=O, >S(=O)(=O)
-                if self.zs[i] in [15,16]:
+                if self._zs[i] in [15,16]:
                     #print('i=', i, 'cnbrs=',cnbrs)
                     ias_only_nbrs.append( i )
                     for j in nnbrs:
@@ -452,15 +463,15 @@ class RawMol(Graph):
                 if self.g[i,j] == 0 and (j!=i):
                     #print(' ++ i,j = ', i,j)
                     g3i[j] = 0
-            nbrs_i = self.ias[g3i.astype(np.bool)]
+            nbrs_i = self._ias[g3i.astype(np.bool)]
             if itype in ['f']:
                 nbrs_i += 1
-            nbrs.append( list(nbrs_i) ) # + [-1]*(self.na-len(nbrs_i)) )
+            nbrs.append( list(nbrs_i) ) # + [-1]*(self._na-len(nbrs_i)) )
         return nbrs #np.array(nbrs, dtype=int) #dict(zip(ias+1, nbrs))
 
     def nbrs_slatm(self, i):
         assert i>0, '#ERROR: i starts from 1'
-        return list(1+self.ias[ self.g_slatm[i-1] > 0 ])
+        return list(1+self._ias[ self.g_slatm[i-1] > 0 ])
 
     def connect_vdw(self):
         self.connect_vdw_inter()

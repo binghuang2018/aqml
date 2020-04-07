@@ -4,9 +4,9 @@
 Enumerate subgraphs & get amons
 """
 
-import cheminfo.math as cim
-import cheminfo.rw.pdb as crp
-import cheminfo.graph as cg
+import aqml.cheminfo.math as cim
+import aqml.cheminfo.rw.pdb as crp
+import aqml.cheminfo.graph as cg
 import networkx as nx
 from itertools import chain, product
 import numpy as np
@@ -14,9 +14,9 @@ import os, re, copy, time
 #from rdkit import Chem
 import openbabel as ob
 import pybel as pb
-from cheminfo import *
-import cheminfo.openbabel.obabel as cib
-from cheminfo.rw.ctab import write_ctab
+from aqml.cheminfo import *
+import aqml.cheminfo.openbabel.obabel as cib
+from aqml.cheminfo.rw.ctab import write_ctab
 
 #Todo
 # stereochemistry: e.g., "CC(=C)C(CC/C(=C\COC1=CC=CC=C1)/C)Br"
@@ -420,7 +420,7 @@ class MG(vars):
 
     def update_m(self, once=True, debug=False, icon=False):
 
-        import cheminfo.fortran.famon as cf
+        import aqml.cheminfo.fortran.famon as cf
 
         g = self.g
         chgs = self.chgs
@@ -1481,7 +1481,7 @@ class ParentMols(object):
         if wg and (not os.path.exists(fdn+'/raw')): os.system('mkdir -p %s/raw'%fdn)
         with open(fdn + '/' + fdn+'.smi', 'w') as fid:
             fid.write('\n'.join( [ '%s %d'%(cans[i],ncs[i]) for i in range(ncan) ] ) )
-        dd.io.save('%s/maps.h5'%fdn, {'maps': maps} )
+        dd.io.save('%s/maps.pkl'%fdn, {'maps': maps} )
 
         if wg:
             ms = seta.ms; ms0 = seta.ms0;
@@ -1507,7 +1507,7 @@ class ParentMols(object):
 
 """
 Codes below were borrowed from Andrew Dalke and some changes were made to
-be independent of any cheminfomatics software!
+be independent of any aqml.cheminfomatics software!
 
 For an explanation of the algorithm see
   http://dalkescientific.com/writings/diary/archive/2011/01/10/subgraph_enumeration.html
@@ -1800,4 +1800,4 @@ List all subgraphs of the given SMILES up to size k atoms (default k=5)
 
             maps = np.array(maps,np.int)
             ids = np.array(ids,np.int)
-            dd.io.save(fn+'.h5', {'ids':ids, 'cans':cs, 'maps':maps})
+            dd.io.save(fn+'.pkl', {'ids':ids, 'cans':cs, 'maps':maps})

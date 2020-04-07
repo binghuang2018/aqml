@@ -4,10 +4,10 @@ import numpy as np
 import openbabel as ob
 import pybel as pb
 import copy
-from cheminfo import *
-import cheminfo.openbabel.amon_f as cioaf
-import cheminfo.openbabel.amon as cioa
-import cheminfo.openbabel.obabel as cib
+from aqml.cheminfo import *
+import aqml.cheminfo.openbabel.amon_f as cioaf
+import aqml.cheminfo.openbabel.amon as cioa
+import aqml.cheminfo.openbabel.obabel as cib
 #import networkx as nx
 
 
@@ -126,7 +126,7 @@ class RawMol(object):
 if __name__ == '__main__':
 
     import os, sys
-    import cheminfo.rw.xyz as cix
+    import aqml.cheminfo.rw.xyz as cix
 
     # Note that file in `fs represent
     fs = sys.argv[1:]

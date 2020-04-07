@@ -4,13 +4,13 @@
 Enumerate subgraphs & get amons
 """
 
-import cheminfo as ci
-import cheminfo.math as cim
-import cheminfo.graph as cg
-import cheminfo.openbabel.amon_f as cioaf
-from cheminfo.rw.ctab import write_ctab
+import aqml.cheminfo as ci
+import aqml.cheminfo.math as cim
+import aqml.cheminfo.graph as cg
+import aqml.cheminfo.openbabel.amon_f as cioaf
+from aqml.cheminfo.rw.ctab import write_ctab
 import networkx as nx
-#import cheminfo.fortran.famon as fm
+#import aqml.cheminfo.fortran.famon as fm
 from itertools import chain, product
 import numpy as np
 import os, re, copy
@@ -813,4 +813,4 @@ List all subgraphs of the given SMILES up to size k atoms (default k=5)
 
             maps = np.array(maps,np.int)
             ids = np.array(ids,np.int)
-            dd.io.save(fn+'.h5', {'ids':ids, 'cans':cs, 'maps':maps})
+            dd.io.save(fn+'.pkl', {'ids':ids, 'cans':cs, 'maps':maps})

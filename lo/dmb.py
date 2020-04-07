@@ -8,13 +8,13 @@ import ase.io as aio
 import itertools as itl
 import scipy.spatial.distance as ssd
 
-from cheminfo.molecule.core import *
-from cheminfo.molecule.elements import *
+from aqml.cheminfo.molecule.core import *
+from aqml.cheminfo.molecule.elements import *
 
-import cheminfo.lo.rotate as clr
-import cheminfo.lo.dm as cld
-from cheminfo.lo.dmx import *
-from cheminfo.lo.dmml import *
+import aqml.cheminfo.lo.rotate as clr
+import aqml.cheminfo.lo.dm as cld
+from aqml.cheminfo.lo.dmx import *
+from aqml.cheminfo.lo.dmml import *
 
 #reload(cld)
 import os,sys

@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 import re, os, sys, io2
-import cheminfo as co
-import cheminfo.core as cc
+import aqml.cheminfo as co
+import aqml.cheminfo.core as cc
 import numpy as np
 
 T, F = True, False

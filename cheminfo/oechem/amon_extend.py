@@ -1,8 +1,8 @@
 
 #from rdkit import Chem
-from cheminfo.rw.ctab import write_ctab
-import cheminfo.oechem.amon as coa
-from cheminfo.oechem.oechem import *
+from aqml.cheminfo.rw.ctab import write_ctab
+import aqml.cheminfo.oechem.amon as coa
+from aqml.cheminfo.oechem.oechem import *
 import tempfile as tpf
 import os, sys
 

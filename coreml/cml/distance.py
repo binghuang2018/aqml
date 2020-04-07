@@ -1,31 +1,9 @@
-# MIT License
-#
-# Copyright (c) 2016 Anders Steen Christensen
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
 
 import numpy as np
-
-from .fdistance import fmanhattan_distance, fl2_distance
+from .fdistance import fl1_distance, fl2_distance
 from .fdistance import fp_distance_integer, fp_distance_double
 
-def manhattan_distance(A, B):
+def l1_distance(A, B):
     """ Calculates the Manhattan distances, D,  between two
         Numpy arrays of representations.
 
@@ -54,7 +32,7 @@ def manhattan_distance(A, B):
 
     D = np.empty((na, nb), order='F')
 
-    fmanhattan_distance(A.T, B.T, D)
+    fl1_distance(A.T, B.T, D)
 
     return D
 

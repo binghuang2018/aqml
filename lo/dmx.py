@@ -1,7 +1,7 @@
 
 import os, sys, ase
 import numpy as np
-from cheminfo.rw.xyz import *
+from aqml.cheminfo.rw.xyz import *
 import itertools as itl
 import cml.fslatm as sl
 import scipy.spatial.distance as ssd

@@ -2,18 +2,18 @@
 
 import itertools as itl
 #import scipy.spatial.distance as ssd
-import cheminfo.molecule.elements as cce
+import aqml.cheminfo.molecule.elements as cce
 import numpy as np
 import os, sys, re, copy
-from cheminfo.rw.ctab import write_ctab
-from cheminfo.rw.pdb import write_pdb
-import cheminfo.math as cm
+from aqml.cheminfo.rw.ctab import write_ctab
+from aqml.cheminfo.rw.pdb import write_pdb
+import aqml.cheminfo.math as cm
 #from rdkit import Chem
 #import indigo
-from cheminfo.molecule.core import *
-import cheminfo.oechem.core as coc
-#import cheminfo.rdkit.amon_f as craf
-import cheminfo.graph as cg
+from aqml.cheminfo.molecule.core import *
+import aqml.cheminfo.oechem.core as coc
+#import aqml.cheminfo.rdkit.amon_f as craf
+import aqml.cheminfo.graph as cg
 import tempfile as tpf
 import cml.famon as cf
 
@@ -455,6 +455,7 @@ class Mol(RawMol):
     def tocan(self, tvs, chgs, bom): #, c='indigo'):
         """
         """
+        #print('bom=',bom)
         pairs, bo_pairs, chgs_aux = self.get_pairs(tvs, bom)
         for i,chg in enumerate(chgs):
             if chg != 0:
@@ -758,8 +759,8 @@ if __name__ == "__main__":
     import ase, sys
     import ase.io as aio
 
-    import cheminfo.rdkit.core as cir
-    from cheminfo.core import *
+    import aqml.cheminfo.rdkit.core as cir
+    from aqml.cheminfo.core import *
 
     args1 = sys.argv[1:]
     idx = 0

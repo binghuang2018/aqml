@@ -6,17 +6,17 @@ from openeye.oechem import *
 import numpy as np
 import networkx as nx
 import networkx.algorithms.isomorphism  as iso
-import cheminfo.oechem.OEChem as oe
+import aqml.cheminfo.oechem.OEChem as oe
 from rdkit import Chem
 import scipy.spatial.distance as ssd
-import cheminfo.openbabel.obabel as cib
+import aqml.cheminfo.openbabel.obabel as cib
 import multiprocessing
-import cheminfo.math as cim
-import deepdish as dd
+import aqml.cheminfo.math as cim
+import cml.sd as dd
 import itertools as itl
 import tempfile as tpf
 #tsdf = tpf.NamedTemporaryFile(dir=tdir)
-import cheminfo.fortran.famoneib as fa
+import aqml.cheminfo.fortran.famoneib as fa
 
 global dsHX
 dsHX = {5:1.20, 6:1.10, 7:1.00, 8:0.98, 9:0.92, 14:1.48, 15:1.42, 16:1.34, 17:1.27}
@@ -929,7 +929,7 @@ class ParentMols(object):
         if wg and (not os.path.exists(fdn+'/raw')): os.system('mkdir -p %s/raw'%fdn)
         with open(fdn + '/' + fdn+'.smi', 'w') as fid:
             fid.write('\n'.join( [ '%s %d'%(cans[i],ncs[i]) for i in range(ncan) ] ) )
-        dd.io.save('%s/maps.h5'%fdn, {'maps': maps} )
+        dd.io.save('%s/maps.pkl'%fdn, {'maps': maps} )
 
         if wg:
             ms = seta.ms; ms0 = seta.ms0;

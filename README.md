@@ -57,41 +57,33 @@ The code was tested only under Linux/Mac OS.
 
 `aqml` is a python/fortran package that requires a number of dependencies:
 
-- `numpy`
-- `scipy`
-- `oechem`: cheminformatic package (need for an academic license, which is free)
-- `rdkit`: cheminformatic package 
+- `numpy` & `scipy`
+- `rdkit` or `oechem`: cheminformatic package (OEChem needs for an academic license, which is free though)
 - `networkx` a Python package for the creation, manipulation, and study of the structure, dynamics, and functions of complex networks. [https://networkx.github.io/documentation/stable/install.html]
 - `ase`: Atomic Simulation Environment [https://wiki.fysik.dtu.dk/ase/install.html]
-- `deepdish`: hdf5 python library 
-- `sympy`: python package doing symbolic math
 
 
 optional:
+- `h5py`: for reading/writing hdf5 file
 - `dftd3`: A dispersion correction for density functionals and other methods [https://www.chemie.uni-bonn.de/pctc/mulliken-center/software/dft-d3/get-the-current-version-of-dft-d3]
 - `imolecule`: draw mol interactively in jupyter-notebook (recommended)
 - `indigo`: cheminformatic package https://lifescience.opensource.epam.com/indigo/index.html#download-and-install
 - `openbabel`: cheminformatic package http://openbabel.org/wiki/Category:Installation
-- `cairosvg`: convert svg to png, pdf, etc.
 
-I recommend using `conda` (for Python 3+) to install all dependencies
+
+I recommend using `conda` (for Python 3.7+) to install all dependencies
 
 
 ## Build & Install 
 
 Steps
 
-- miniconda or anaconda (go to https://docs.conda.io/projects/conda/en/latest/user-guide/install/ and follow the instructions there. Note that the version Python 3.7 is preferred!)
+- miniconda or anaconda (go to https://docs.conda.io/projects/conda/en/latest/user-guide/install/ and follow the instructions there. Note that Python >=3.6 is preferred!)
 
-- oechem (first apply for an academic license from https://www.eyesopen.com/academic-licensing) and then
-```bash
-[macos] pip install -i https://pypi.anaconda.org/openeye/simple openeye-toolkits-python3-osx-x64
-[linux] pip install -i https://pypi.anaconda.org/openeye/simple openeye-toolkits-python3-linux-x64
-```
-Afterwards, install the license file
-```bash
-echo "export OE_LICENSE=/path/to/oe_license.txt" >>~/.bashrc
-```
+
+
+
+
 
 - rdkit
 ```bash
@@ -114,15 +106,19 @@ pip install networkx==2.2
 git clone https://github.com/binghuang2018/aqml.git
 ```
 
-- Build core ML library (mainly fortran code for time-consuming part of compuation)
+- build & install aqml
 ```bash
 cd aqml
 export AQML_ROOT=$PWD
-cd $AQML_ROOT/coreml
-python setup.py install
+export CHEMPACK=RDKIT
+./install.sh
 ```
 
-- Install python code through `cd $AQML_ROOT; ./install.sh`
+If you prefer to use OEChem, install the license file through
+```bash
+echo "export OE_LICENSE=/path/to/oe_license.txt" >>~/.bashrc; source ~/.bashrc
+```
+
 
 Now you are ready to go!
 
@@ -135,10 +131,10 @@ conda install -y -c openbabel openbabel
 
 # Usage
 
-Here, we offer the very basic usage of the code: amons generation. For more, refer to Jupyter notebooks under folder doc/.
-Overall, two options are available for generation of amons.
+Here, we offer the basics for amons generation. Refer to Jupyter notebooks under folder `doc/` for more usages.
+Two options are available:
 
-## Commandline
+## Command line
 
 Example:
 
@@ -182,9 +178,9 @@ Meanwhile, a folder `g6/` is also generated, containing the following files:
 ```bash
 frag_1_c00001.sdf  frag_3_c00002.sdf  frag_5_c00002.sdf  frag_7_c00001.sdf
 frag_2_c00001.sdf  frag_4_c00001.sdf  frag_6_c00001.sdf  i-raw/
-frag_3_c00001.sdf  frag_5_c00001.sdf  frag_6_c00002.sdf  map.h5
+frag_3_c00001.sdf  frag_5_c00001.sdf  frag_6_c00002.sdf  map.pkl
 ```
-As one can see from above, there are three kinds of files: i) sdf files storing 3d geometry of amon conformer has the format `frag_[digit(s)]_c[digits].sdf`, where the first entry of digits is the numbering of mol graphs, while the second entry corresponds to the numbering of associated conformers for each mol graph. ii) a mapping file `map.h5`, containing the idx of amons (of the same order as above for amons in file `g6.txt`) for all query molecules. If there is only one query mol,
+As one can see from above, there are three kinds of files: i) sdf files storing 3d geometry of amon conformer has the format `frag_[digit(s)]_c[digits].sdf`, where the first entry of digits is the numbering of mol graphs, while the second entry corresponds to the numbering of associated conformers for each mol graph. ii) a mapping file `map.pkl`, containing the idx of amons (of the same order as above for amons in file `g6.txt`) for all query molecules. If there is only one query mol,
 this file is not useful at all. iii) the folder `i-raw/` stores the original local geometry of fragments of the query mol(s). There exists a 1-to-1 mapping from each sdf file in `g7/` and `g7/i-raw`. E.g., for the file `frag_6_c00002.sdf` under `g7/`, the corresponding file in `g7/i-raw/` is `frag_6_c00002_raw.sdf`. The only difference is that newly added hydrogen atoms in `frag_6_c00002.sdf` are optimized by MMFF94, while the H's in `frag_6_c00002_raw.sdf` are not.
 
 To speed up generation of amons when a large amount of files are given as input, an option `-mpi` can be specified together with `-nprocs [NPROCS]`. Essentially, the python module `multithreading` was used.
@@ -198,7 +194,7 @@ If your input is mol graph, the output is also mol graph, though of smaller size
 
 ```bash
 
->>> import cheminfo.oechem.amon as coa
+>>> import aqml.cheminfo.oechem.amon as coa
 >>> li = ['Cc1ccccc1']
 >>> obj = coa.ParentMols(li, k=5, i3d=False)
 >>> a = obj.generate_amons()
@@ -212,7 +208,7 @@ If your input is mol graph, the output is also mol graph, though of smaller size
 If your input is mol graph together with 3d coordinates (such as a sdf file), the output is amons with 3d coords (hereafter we call them amons conformers).
 
 ```bash
->>> import cheminfo.oechem.amon as coa
+>>> import aqml.cheminfo.oechem.amon as coa
 
 >>> li = ['test/phenol.sdf', ] # multiple 
 >>> obj = coa.ParentMols(li, k=5, i3d=True)

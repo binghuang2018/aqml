@@ -1,17 +1,19 @@
 # -*- coding: utf-8 -*-
 
-from cheminfo import *
-from cheminfo.rw.xyz import *
-from cheminfo.rw.sdf import *
-import cheminfo.data.atoms as cda
+from aqml.cheminfo import *
+from aqml.cheminfo.rw.xyz import *
+from aqml.cheminfo.rw.sdf import *
+import aqml.cheminfo.data.atoms as cda
 import numpy as np
-import ase, os, io2, sys
-import cheminfo as co
-import cheminfo.molecule.core as cmc
+import ase, os, sys
+import aqml.io2 as io2
+import aqml.cheminfo as co
+import aqml.cheminfo.molecule.core as cmc
 from ase.calculators.dftd3 import DFTD3
 import multiprocessing as mt
 import numpy.linalg as LA
-import sympy as spy
+
+T, F = True, False
 
 def obj2m(obj, property_names=None, isimple=F, idx=None, unit=None):
     assert unit is not None
@@ -135,7 +137,7 @@ class atoms(object):
                 so += '%s=%s '%(key,str(self.props[key]))
         so += '\n'
         for si,(x,y,z) in zip(self._symbols, self._coords):
-            so += '%-6s %15.8f %15.8f %15.8f\n'%(si,x,y,z)
+            so += '%2s %15.8f %15.8f %15.8f\n'%(si,x,y,z)
         with open(f,'w') as fid: fid.write(so)
 
 

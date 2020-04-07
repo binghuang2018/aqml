@@ -126,7 +126,13 @@ class GR(object): #co.atoms):
         pns = self.pns
         #print( '    pns = ', pns, self.meth, self.basis )
         if ('e' in pns) or ('es' in pns):
-            props.update( {self.meth+self.basis: self.es[-1]} )
+            if self.meth in ['cc','cc2','qci','qci2','mp2']:
+                meths = list(set(['hf', 'mp2', self.meth]))
+            else:
+                meths = [self.meth]
+            for h in meths:
+                esi = self.get_energy(h)
+                props.update( {h+self.basis: esi[-1]} )
         if 'mu' in pns:
           props.update( {'mu': self.mu} )
         if ('alpha' in pns) or ('polar' in pns):
@@ -140,10 +146,10 @@ class GR(object): #co.atoms):
         return props
 
     @property
-    def istat(self):
+    def is_job_done(self):
         """ is job terminated normally? """
         if not hasattr(self, '_istat'):
-            el = open(f).readlines()[-1] # end line
+            el = open(self.f).readlines()[-1] # end line
             self._istat = 'Normal termination' in el
         return self._istat
 
@@ -225,8 +231,8 @@ class GR(object): #co.atoms):
     bsts =  ['aug-cc-pvdz', 'aug-cc-pvtz', 'aug-cc-pvqz', \
              'cc-pvdz', 'cc-pvtz', 'cc-pvqz', \
              'def2-sv(p)', 'def2-svp', 'def2-tzvp', 'def2-qzvp', \
-             '6-31g(d)']
-    bsts_short = ['avdz', 'avtz', 'avqz', 'vdz', 'vtz','vqz', 'def2sv-p', 'def2svp', 'def2tzvp', 'def2qzvp', '631gd']
+             '6-31g(d)', '6-31g(d,p)']
+    bsts_short = ['avdz', 'avtz', 'avqz', 'vdz', 'vtz','vqz', 'def2sv-p', 'def2svp', 'def2tzvp', 'def2qzvp', '631gd', '631gdp']
     dctb = dict(zip(bsts, bsts_short))
 
     @property
@@ -331,26 +337,27 @@ class GR(object): #co.atoms):
         return self._es
 
     def get_energies(self):
+        return self.get_energy(self.meth)
+
+    def get_energy(self, h):
         f = self.f
         xtra = '' # 'tail -n 1 | '
-        if self.meth in ['b3lyp', 'b3lypd3', 'bv5lyp', 'bv5lypd3']: #B3LYP', 'RB3LYP', 'UB3LYP']:
+        if h in ['b3lyp', 'b3lypd3', 'bv5lyp', 'bv5lypd3']: #B3LYP', 'RB3LYP', 'UB3LYP']:
             cmd = "grep 'LYP) =' %s | %sawk '{print $5}'"%(f, xtra) #out
-            #print('cmd= ', cmd)
             ss = cmdout2(cmd)
-        elif self.meth in ['cc', 'cc2', 'qci', 'qci2']:
-            #{'UQCISD(T)':'QCISD(T)', 'QCISD(T)':'QCISD(T)', 'UCCSD(T)':'CCSD(T)', 'CCSD(T)':'CCSD(T)'}
-            cmd = "grep -i '^ q?c[ci]sd' %s | %sawk '{print $2}'"%(f, xtra)
+        elif h in ['cc', 'cc2', 'qci', 'qci2']:
+            cmd = "grep -i -E '^\sq?c[ci]sd\(?=?\)?' %s | %sawk '{print $2}'"%(f, xtra)
             ss = cmdout2(cmd)
-        elif self.meth in ['mp2']:
+        elif h in ['mp2']:
             cmd = "grep 'EUMP2 = ' %s | awk '{print $NF}'"%f
             ss = cmdout2(cmd)
-        elif self.meth in ['hf']:
+        elif h in ['hf']:
             cmd = "grep 'E([RU]HF) = ' %s | awk '{print $5}'"%f
             ss = cmdout2(cmd)
         else:
-            print(' meth="%s"'%self.meth)
-            print('#ERROR: not implemented yet'); sys.exit(3)
+            raise Exception('#Todo: meth=%s'%self.meth)
         es = []
+        #print('ss=',ss, 'meth=',self.meth)
         for se in ss.split('\n'):
             if 'D' in se:
                 e = eval( 'E'.join( se.split('D') ) )

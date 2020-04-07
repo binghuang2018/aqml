@@ -12,18 +12,18 @@ import ase.io as aio
 import ase.data as ad
 import ase, os, sys, re, copy
 
-import cheminfo as co
-import cheminfo.core as cc
+import aqml.cheminfo as co
+import aqml.cheminfo.core as cc
 
-import cheminfo.math as cim
-from cheminfo.molecule.elements import Elements
-import cheminfo.molecule.core as cmc
-import cheminfo.molecule.geometry as GM
-import cheminfo.molecule.nbody as MB
-import cheminfo.rdkit.resonance as crr
-import cheminfo.oechem.core as coc
+import aqml.cheminfo.math as cim
+from aqml.cheminfo.molecule.elements import Elements
+import aqml.cheminfo.molecule.core as cmc
+import aqml.cheminfo.molecule.geometry as GM
+import aqml.cheminfo.molecule.nbody as MB
+import aqml.cheminfo.rdkit.resonance as crr
+import aqml.cheminfo.oechem.core as coc
 
-import cheminfo.rw.ctab as crc
+import aqml.cheminfo.rw.ctab as crc
 from rdkit import Chem
 
 

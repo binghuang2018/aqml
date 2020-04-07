@@ -4,12 +4,11 @@ import numpy as np
 import openbabel as ob
 import pybel as pb
 import os, sys, copy
-from cheminfo.rw.ctab import write_ctab
+from aqml.cheminfo.rw.ctab import write_ctab
 import scipy.spatial.distance as ssd
-from openeye.oechem import *
 import tempfile as tpf
-from cheminfo.core import *
-from cheminfo.molecule.elements import Elements
+from aqml.cheminfo.core import *
+from aqml.cheminfo.molecule.elements import Elements
 
 T,F = True,False
 
@@ -57,11 +56,14 @@ def to_oechem_can(smi):#,hack_uff=F):
     """ Note that some SMILES such as C=N=O cannot be recognized
     correctly by openbabel. With OEChem, it is interpretted as
     C=[NH]=O, as was desired """
+
+    from openeye import oechem
+
     if smi in element_cans:
         return '['+smi+'H%d]'%( nves[smi] )
-    m = OEGraphMol()
-    assert OESmilesToMol(m,smi)
-    assert OEAddExplicitHydrogens(m)
+    m = oechem.OEGraphMol()
+    assert oechem.OESmilesToMol(m,smi)
+    assert oechem.OEAddExplicitHydrogens(m)
     #atyps = []
     #for ai in m.GetAtoms():
     #    zi = ai.GetAtomicNum()
@@ -79,8 +81,8 @@ def to_oechem_can(smi):#,hack_uff=F):
     # "OESMILESFlag_ImpHCount" is indispensible!!
     # Otherwise, B=C won't be processed correctly by openbabel, i.e., somehow obabel
     # tries to add two H's (instead of one) to B. While things are ok with [BH]=C
-    flavor = OESMILESFlag_Isotopes | OESMILESFlag_Canonical | OESMILESFlag_ImpHCount
-    smi = OECreateSmiString(m, flavor)
+    flavor = oechem.OESMILESFlag_Isotopes | oechem.OESMILESFlag_Canonical | oechem.OESMILESFlag_ImpHCount
+    smi = oechem.OECreateSmiString(m, flavor)
     # OECreateIsoSmiString() # ISOMERIC .eq. Isotopes | AtomStereo | BondStereo | Canonical | AtomMaps | RGroups
     #fout = tpf.NamedTemporaryFile(dir='/tmp/').name + '.sdf'
     #ofs = oemolostream(fout)

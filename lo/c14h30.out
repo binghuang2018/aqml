@@ -1,0 +1,60 @@
+
+ molecule= test/c14h30.xyz
+ [rc_x, rc_dm] =  [3.2, 4.2]
+converged SCF energy = -544.636398472545
+Dipole moment(X, Y, Z, Debye): -0.00106, -0.00105,  0.00047
+ * test on the accuracy of localized rdm1 determined by a cutoff 
+Dipole moment(X, Y, Z, Debye): -81.47883, 85.14687, -33.88210
+ ** n=114.00, n_u=117.16, delta_n=3.16 []
+ ** dip=0.00, dip_u=122.62, delta_dip=122.62 [Debye]
+ ** e=-341764.50, e_u=-343633.26, delta_e=-1868.76 [kcal/mol]
+ ** homo=-6.24, homo_u=9.25, delta_homo=15.49 [eV]
+ ** lumo=9.04, lumo_u=20.99, delta_lumo=11.94 [eV]
+
+ molecule= test/c14h30.xyz
+ [rc_x, rc_dm] =  [3.2, 4.2]
+converged SCF energy = -544.636398472545
+Dipole moment(X, Y, Z, Debye): -0.00106, -0.00105,  0.00047
+ * test on the accuracy of localized rdm1 determined by a cutoff 
+Dipole moment(X, Y, Z, Debye):  3.32499, -3.47674,  1.38361
+ ** n=114.00, n_u=113.87, delta_n=-0.13 []
+ ** dip=0.00, dip_u=5.01, delta_dip=5.00 [Debye]
+ ** e=-341764.50, e_u=-341621.00, delta_e=143.50 [kcal/mol]
+ ** homo=-6.24, homo_u=-6.76, delta_homo=-0.52 [eV]
+ ** lumo=9.04, lumo_u=8.42, delta_lumo=-0.62 [eV]
+
+ molecule= test/c14h30.xyz
+ [rc_x, rc_dm] =  [3.2, 4.2]
+converged SCF energy = -544.636398472545
+Dipole moment(X, Y, Z, Debye): -0.00106, -0.00105,  0.00047
+ * test on the accuracy of localized rdm1 determined by a cutoff 
+Dipole moment(X, Y, Z, Debye):  0.01809, -0.02105,  0.00842
+ ** n=114.00, n_u=114.00, delta_n=-0.00 []
+ ** dip=0.00, dip_u=0.03, delta_dip=0.03 [Debye]
+ ** e=-341764.50, e_u=-341763.88, delta_e=0.62 [kcal/mol]
+ ** homo=-6.24, homo_u=-6.22, delta_homo=0.02 [eV]
+ ** lumo=9.04, lumo_u=9.04, delta_lumo=-0.01 [eV]
+
+ molecule= test/c14h30.xyz
+ [rc_x, rc_dm] =  [3.2, 4.2]
+converged SCF energy = -544.636398472543
+Dipole moment(X, Y, Z, Debye): -0.00106, -0.00105,  0.00047
+ * test on the accuracy of localized rdm1 determined by a cutoff 
+Dipole moment(X, Y, Z, Debye): -0.00466,  0.00271, -0.00103
+ ** n=114.00, n_u=114.00, delta_n=0.00 []
+ ** dip=0.00, dip_u=0.01, delta_dip=0.00 [Debye]
+ ** e=-341764.50, e_u=-341764.87, delta_e=-0.37 [kcal/mol]
+ ** homo=-6.24, homo_u=-6.21, delta_homo=0.03 [eV]
+ ** lumo=9.04, lumo_u=9.04, delta_lumo=-0.00 [eV]
+
+ molecule= test/c14h30.xyz
+ [rc_x, rc_dm] =  [3.2, 4.2]
+converged SCF energy = -544.636398472544
+Dipole moment(X, Y, Z, Debye): -0.00106, -0.00105,  0.00047
+ * test on the accuracy of localized rdm1 determined by a cutoff 
+Dipole moment(X, Y, Z, Debye): -0.00105, -0.00106,  0.00048
+ ** n=114.00, n_u=114.00, delta_n=-0.00 []
+ ** dip=0.00, dip_u=0.00, delta_dip=0.00 [Debye]
+ ** e=-341764.50, e_u=-341764.52, delta_e=-0.02 [kcal/mol]
+ ** homo=-6.24, homo_u=-6.23, delta_homo=0.01 [eV]
+ ** lumo=9.04, lumo_u=9.04, delta_lumo=-0.00 [eV]

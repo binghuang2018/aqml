@@ -20,7 +20,7 @@ T, F = True, False
 
 #def update_dct(adic, dct):
 import numpy as np
-import io2
+import aqml.io2 as io2
 
 ## reference atomic energies
 ## H2, CH4, N2, O2, F2, Cl2, Br2, I2, P4, S8

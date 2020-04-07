@@ -2,9 +2,10 @@
 
 import numpy as np
 import ase.io.extxyz as rx
-import cheminfo as co
+from aqml import cheminfo as co
 from ase import Atoms
-import io2, os, re
+import aqml.io2 as io2
+import os, re
 
 def read_xyz_simple(f, opt='z', icol=None, property_names=None, idx=None):
     """

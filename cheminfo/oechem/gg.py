@@ -8,12 +8,12 @@ graph of graph, i.e., connectivity between amons
 from functools import reduce
 import os, sys, re, copy, ase, time
 import numpy as np
-import cheminfo as co
-from cheminfo.rw.ctab import write_ctab
+import aqml.cheminfo as co
+from aqml.cheminfo.rw.ctab import write_ctab
 import multiprocessing
 import itertools as itl
-from cheminfo.molecule.elements import Elements
-import cheminfo.oechem.core as coc
+from aqml.cheminfo.molecule.elements import Elements
+import aqml.cheminfo.oechem.core as coc
 
 rscov0 = Elements().rcs
 rsvdw0 = Elements().rvdws

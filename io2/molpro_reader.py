@@ -2,15 +2,21 @@
 
 import re, io2, os, sys
 import numpy as np
-from cheminfo.core import *
-import cheminfo.rw.xyz as crx
+import aqml.cheminfo as co
+from aqml.cheminfo.core import *
+import aqml.cheminfo.rw.xyz as crx
 import shutil
 
 T, F = True, False
 spp = '\s\s*'
 
+uc = io2.Units()
+
+cardinal = {'vdz':2, 'vtz':3, 'vqz':4}
+
 cmdout1 = lambda cmd: os.popen(cmd).read().strip()
 cmdout = lambda cmd: os.popen(cmd).read().strip().split('\n')
+
 iu = io2.Units()
 
 
@@ -18,6 +24,7 @@ class Molpro(object):
 
     jobs = ['optg','force','freq']
     jobs_a = ['optg','force','forces','freq','frequency']
+
 
     def __init__(self, f, keys=[], iprop=T, units=['kcal','a']):
         self.f = f
@@ -177,9 +184,9 @@ class Molpro(object):
 
         self.ioptg = ioptg
         symbols = []; zs = []; coords = []
-        print('cs=',cs)
+        #print('cs=',cs)
         for ci in cs:
-            csi = ci.strip().split(); print('csi=',csi)
+            csi = ci.strip().split(); #print('csi=',csi)
             si = csi[0]
             try:
                 zi = chemical_symbols.index(si)
@@ -408,11 +415,12 @@ class Molpro(object):
         cmd0 = "grep ' GRADIENT FOR STATE ' %s >/dev/null"%ff
         iok = os.system(cmd0)
 
-        ## the `cmd is not safe due to the fact that sometimes, there is line break
-        ## within the force blocks in log file
+        ## the `cmd` below is not safe due to the fact that sometimes,
+        ## there is line break within the force blocks in log file
         #cmd = "grep -A%d ' GRADIENT FOR STATE ' %s | tail -%d"%(na+3, ff, na)
-        ## As a result, we use the scheme below: i.e., read the first line first, then
-        ## exhaust all following lines till the number of force vectors is correct
+        ## As a result, we use an alternative scheme, i.e., read line 1 first,
+        ## then exhaust all following lines till the number of force vectors
+        ## is correct
         cmd = "grep -n ' GRADIENT FOR STATE ' %s | tail -1 | sed 's/:/ /g' | awk '{print $1}'"%ff
         #print('cmd= ', cmd )
         if iok == 0:
@@ -551,4 +559,417 @@ def write_all(fs, keys, units=['kcal','a']):
     # if fs[0]='target/frag_01.out', xyz file with property
     # will be writen to target/frag_01.xyz
     o.write('xyz')
+
+
+
+class molprojob(object): #co.atoms):
+
+    """
+    This module is more robust for reading molpro output and is highly
+    recommended (cf. class Molpro() above)
+    """
+
+    def __init__(self, f, property_names=['e']): #patts=None, cols=None, keys=None):
+        self.f = f
+        #self.patts = patts
+        self.property_names = property_names
+        #self.cols = cols
+        self.cs = open(f).readlines()
+        self.fmt = f[-3:]
+
+    _jobs = ['optg','force','freq']
+
+    @property
+    def job(self):
+        if not hasattr(self, '_job'):
+            jo = 'e'
+            for j in self._jobs:
+                cmd = "grep -E '^\s*[^!]\s*\{?%s' %s"%(j, self.f)
+                if cmdout1(cmd):
+                    jo = j
+                    break
+            self._job = jo
+        return self._job
+
+    _todo = """@property
+    def icbs(self):
+        if not hasattr(self, '_icbs'):
+            self._icbs = self.get_icbs()
+        return self._icbs
+
+    def get_icbs(self):
+        key = 'Extrapolate'
+        icbs = F
+        if cmdout('grep "%s" %s'%(key, self.f)) != '':
+            icbs = T
+        return icbs """
+
+    @property
+    def atoms(self):
+        if not hasattr(self, '_atoms'):
+            self._atoms = self.get_atoms()
+        return self._atoms
+
+    @property
+    def is_job_done(self):
+        return 'Molpro calc' in self.cs[-1]
+
+
+    def get_atoms(self):
+        fo = self.f
+        fl = fo[:-4] + '.log'
+        const = 1.0
+        cmd = "grep 'OPT (Geometry optimization' %s"%fo
+        cmd2 = "grep -n ' Current geometry' %s | head -n 1 | cut -d: -f1"%fo
+        cmd3 = "grep -n ' Current geometry' %s | tail -n 1 | cut -d: -f1"%fl
+        zs = []; coords = []
+        s = cmdout1(cmd)
+        s2 = cmdout1(cmd2)
+
+        ioc = T # use output coords
+        iofmt = 'out' # use geom from *.out file
+        if s:
+            if self.is_job_done:
+                ln = int(s2) + 1
+            else:
+                if os.path.exists(fl):
+                    s3 = cmdout1(cmd3)
+                    #print('s=',s, 's2=',s2, 's3=',s3)
+                    if s3:
+                        ln = int(s3) + 1
+                        iofmt = 'log'
+                        self.cs = open(fl).readlines()
+                    else:
+                        ioc = F
+                else:
+                    ioc = F
+        else:
+            ioc = F
+        self.ioc = ioc
+        self.iofmt = iofmt
+
+        if ioc:
+            print('   ** read fully/partially optimized geom from %s.%s'%(fo[:-4], iofmt))
+            #print('ln=',ln, 'ci= "%s"'%self.cs[ln:ln+2])
+            na = int(self.cs[ln])
+            for li in self.cs[ln+2:ln+2+na]:
+                tsi = li.strip().split()
+                zi = co.chemical_symbols_lowercase.index( tsi[0].lower() )
+                zs.append(zi); coords.append([eval(x) for x in tsi[1:] ])
+        else: # single point energy/force calc, coordinates in Bohr
+            print('   ** read input geom from %s.out'%fo[:-4])
+            const = io2.Units().b2a
+            ln = int(cmdout1("grep -n ' ATOMIC COORDINATES' %s | sed 's/:/ /g' | awk '{print $1}'"%fo)) + 3
+            while True:
+                ci = self.cs[ln].strip()
+                if ci == '':
+                    break
+                tsi = ci.strip().split()
+                #print('ci=',ci)
+                zi = co.chemical_symbols_lowercase.index( tsi[1].lower() )
+                zs.append(zi)
+                coords.append([ eval(x) for x in tsi[3:6] ]) #cmdout("sed -n '%dp' %s | awk '{print $2,$4,$5,$6}'"%(ln,fo))
+                ln += 1
+                #print('cs=',cs)
+        return co.atoms(zs, coords)
+        #co.atoms.__init__(self, zs, coords)
+
+
+    bsts =  ['aug-cc-pvdz', 'aug-cc-pvtz', 'aug-cc-pvqz', \
+             'cc-pvdz', 'cc-pvtz', 'cc-pvqz', \
+             'def2-sv(p)', 'def2-svp', 'def2-tzvp', 'def2-qzvp']
+    bsts_short = ['avdz', 'avtz', 'avqz', 'vdz', 'vtz','vqz', 'def2sv-p', 'def2svp', 'def2tzvp', 'def2qzvp']
+    dctb = dict(zip(bsts, bsts_short))
+
+
+    @property
+    def basis(self):
+        """ return short name of basis """
+        if not hasattr(self, '_basis'):
+            self.get_basis()
+        return self._basis
+
+    @property
+    def basis_c(self):
+        """ return the complete name of basis """
+        if not hasattr(self, '_basis_c'):
+            self.get_basis()
+        return self._basis_c
+
+    def get_basis(self):
+        # now basis set
+        _cs = self.cs
+        idxl = 0
+        while T:
+            ci = _cs[idxl].strip()
+            if ci[:5] == 'basis':
+                break
+            idxl += 1
+        ci2 = _cs[idxl+1].strip()
+        tf1, tf2 = ('{' not in ci), ('{' not in ci) # tf: true or false?
+        if tf1: # and tf2:
+            # i.e., simple basis set input, e.g., basis=vtz
+            basis = ci.split('!')[0].split('=')[-1].strip().lower()
+            basis_c = basis # complete specification of basis
+        else:
+            # i.e., detailed basis setting, e.g., basis={default=vtz; I=vtz-pp; ...}
+            csb = '' # '{'+ci.split('!')[0].split('{')[1] #''
+            if 'default' not in ci:
+                idxl += 1
+                basis = ci2.split('!')[0].strip().split('=')[1].lower()
+            else:
+                c1, c2 = ci.split('!')[0].split('{')
+                basis = c2.split('=')[1].lower()
+                #csb += c2
+            ### search for '}'
+            while T:
+                cj = _cs[idxl].strip()
+                if '}' in cj:
+                    cj2 = cj.split('}')[0]
+                    if cj2 != '':
+                        csb = csb+';'+cj2 if csb != '' else cj2
+                    break
+                else:
+                    if cj != '':
+                        cj2 = cj.split('!')[0]
+                        if cj2 != '':
+                            csb = csb + ';' + cj2 if csb != '' else cj2
+                idxl += 1
+            basis_c = basis
+            if re.search('basis={', csb):
+                basis_c = '{'+csb.split('basis={')[1].lower()+'}'
+            #print('basis=',basis)
+            #print('basis_c=',basis_c)
+        basis = re.sub('-','',basis)
+        self._basis = basis
+        self._basis_c = basis_c
+
+    @property
+    def meth(self):
+        if not hasattr(self, '_meth'):
+            self._meth = self.get_meth()
+        return self._meth
+
+    @property
+    def xc(self):
+        if not hasattr(self, '_xc'):
+            fun = None
+            patt = '\-?[ru]?ks,\s*([a-zA-Z][a-zA-Z0-9]*)'
+            cmd = "grep -E '%s' %s"%(patt, self.f)
+            #print('cmd= "%s"'%cmd)
+            c = cmdout1(cmd)
+            if c:
+                fun = re.search(patt, c).groups()[0]
+            self._xc = fun
+        return self._xc
+
+    _meths_c = ['pno-lccsd(t)-f12', 'pno-lccsd-f12', \
+                'df-ccsd(t)-f12', 'df-ccsd-f12', \
+              'ccsd(t)-f12', 'ccsd-f12', 'df-ccsd(t)', \
+               'df-ccsd', 'ccsd(t)', 'ccsd', \
+              'pno-lmp2-f12', 'df-mp2-f12', 'mp2-f12', \
+              'df-mp2', 'mp2', 'df-hf', 'hf', 'b3lyp' ]
+    _meths =   [ 'lcc2f12', 'lccf12', \
+                'cc2f12', 'ccf12', \
+              'cc2f12', 'ccf12', \
+              'cc2', 'cc', \
+              'cc2', 'cc', \
+              'lmp2f12', 'mp2f12', \
+              'mp2f12', 'mp2', \
+              'mp2', 'hf', 'hf', 'b3lyp' ]
+    _patts =   ['pno-lccsd\(t\)-f12', 'pno-lccsd-f12', \
+                'df-[ru]?ccsd\(t\)-f12', 'df-[ru]?ccsd-f12', \
+              '[ru]?ccsd\(t\)-f12', '[ru]?ccsd-f12', \
+              'df-[ru]?ccsd\(t\)', 'df-[ru]?ccsd', \
+              '[ru]?ccsd\(t\)', '[ru]?ccsd', \
+              'pno-lmp2-f12', 'df-[ru]?mp2-f12',\
+               '[ru]?mp2-f12', 'df-[ru]?mp2', \
+               '[ru]?mp2', 'df-[ru]?hf', '[ru]?hf', 'b3lyp' ]
+
+    def get_meth(self):
+        """ get method (full name, rather than short name.
+            I.e., one entry of `_meths_c`) used in *.out file """
+        # assume input file is of format *.out
+        assert self.fmt == 'out'
+        cs0 = self.cs
+        nlmax = len(cs0)
+
+        # step 1, check if it's dft method
+        idft = F
+        meth = None
+        if self.xc:
+            idft = T
+            meth = self.xc
+        else:
+            for i, patt in enumerate(self._patts):
+                cmd = "grep -E '%s' %s"%(patt, self.f)
+                if cmdout1(cmd):
+                    meth = self._meths_c[i]
+                    break
+        assert meth, '#ERROR: meth=None?'
+        return meth
+
+    @property
+    def epatts(self):
+        if not hasattr(self, '_epts'):
+            if self.xc:
+                epts = { self.xc: { 'keys': [ [ '![UR]KS','STATE','1.1','Energy'] ],
+                                    'meths': [ self.xc + self.basis ],
+                                    'ffmt': 'log'} }
+            else:
+              if self.job == 'optg':
+                epts = { \
+                  'df-ccsd(t)-f12': { 'keys': [ [ '!CCSD\(T\)-F12', 'total', 'energy'],
+                                                [ '!MP2-F12', 'total', 'energy' ], \
+                                                [ '![UR]HF', 'STATE', '1.1', 'Energy' ] ],
+                                      'meths': [ mi  + self.basis for mi in [ 'dfcc2f12', 'dfmp2f12', 'hf'] ],
+                                      'ffmt': 'log' },
+                     'df-ccsd-f12': { 'keys': [ [ '!CCSD-F12', 'total', 'energy'],
+                                                [ '!MP2-F12', 'total', 'energy' ], \
+                                                [ '![UR]HF', 'STATE', '1.1', 'Energy' ] ],
+                                      'meths': [ mi  + self.basis for mi in [ 'dfcc2f12', 'dfmp2f12', 'hf'] ],
+                                      'ffmt': 'log' },
+
+                        }
+
+              else:
+                epts = { 'ccsd(t)': { 'keys': [ [ '!CCSD\(T\)', 'total', 'energy' ], \
+                                                [ 'MP2', 'total', 'energy' ], \
+                                                [ '![UR]HF', 'STATE', '1.1', 'Energy' ] ],
+                                       'meths': [ mi + self.basis for mi in ['cc2','mp2','hf'] ],
+                                       'ffmt': 'out' },
+                    # From Molpro manual,
+                    #     """ Thus, we currently recommend CCSD-F12A for AVDZ and AVTZ basis sets,
+                    #         and CCSD-F12B for larger basis sets (rarely needed).  """
+                     'ccsd(t)-f12': { 'keys': [ [ '!CCSD\(T\)-F12a', 'total', 'energy'],
+                                                [ '![UR]HF', 'STATE', '1.1', 'Energy' ] ],
+                                      'meths': [ mi  + self.basis for mi in [ 'cc2f12', 'hf'] ],
+                                       'ffmt': 'out'  },
+                   # Note that for df-ccsd(t)-f12, a different strategy
+                   # was used (cf. ccsd(t)-f12) and one unique mp2f12
+                   # energy is available (cf. multiple energies for the case
+                   # without 'df-' )
+                  'df-ccsd(t)-f12': { 'keys': [ [ '!CCSD\(T\)-F12', 'total', 'energy'],
+                                                [ '!MP2-F12', 'total', 'energy' ], \
+                                                [ '![UR]HF', 'STATE', '1.1', 'Energy' ] ],
+                                      'meths': [ mi  + self.basis for mi in [ 'cc2f12', 'mp2f12', 'hf'] ],
+                                       'ffmt': 'out'  },
+                  'pno-ccsd(t)-f12': { 'keys': [ [ '!LCCSD\(T\)-F12', 'total', 'energy'],
+                                                [ '!LMP2-F12', 'total', 'energy' ], \
+                                                [ '![UR]HF', 'STATE', '1.1', 'Energy' ] ],
+                                      'meths': [ mi  + self.basis for mi in [ 'lcc2f12', 'lmp2f12', 'hf'] ],
+                                       'ffmt': 'out'  },
+
+                        }
+            self._epts = epts
+        return self._epts
+
+
+    def get_energies(self):
+        """ get energies of the last configuration?? """
+        _meth_c = self.meth
+        i0 = self._meths_c.index(_meth_c)
+        _meth = self._meths[i0]
+
+        #print('meth=',_meth_c, 'meths=',self.epatts)
+        if _meth_c not in self.epatts:
+            raise Exception('#ERROR: key not found')
+
+        epts = self.epatts[_meth_c]
+        spp = '\s\s*'
+        patts = [ spp.join(ptsi) for ptsi in epts['keys'] ]
+        meths = epts['meths']
+        iptf = self.f[:-3] + epts['ffmt']
+
+        es = {}
+        for i, pt in enumerate(patts):
+            cmd = "grep -E '%s' %s | tail -n1"%(pt, iptf)
+            #print('cmd= "%s"'%cmd)
+            c = cmdout1(cmd)
+            #if _meth_c == 'df-mp2-f12':
+            #   if re.search('cabs_singles\s*=\s*-1', c):
+            #       continue
+            v = eval( c.split()[-1] )
+            es[meths[i]] = v
+        return es
+
+
+    @property
+    def props(self):
+        if not hasattr(self, '_props'):
+            self._props = self.get_props()
+        return self._props
+
+
+    @property
+    def apatts(self):
+        """ patterns for all properties other than energy """
+        if not hasattr(self, '_apt'):
+            a = { 'mu': [] }
+            self._apt = a
+        return self._apt
+
+    def get_props(self):
+        props = {}
+        for i,p in enumerate(self.property_names): #patts):
+            if p == 'e':
+                _props = self.get_energies()
+                props.update( _props )
+            else:
+                if p not in self.apatts:
+                    raise Exception('Todo: key currently absent!')
+                patt, loc = self.apatts[p]
+                cmdi = "grep '%s' %s | awk '{print %s}'"%(patt, self.f, loc)
+                #print('cmd=',cmdi)
+                val = eval( cmdout1(cmdi) )
+                props[key] = val
+        return props
+
+    def write(self, fo, overwrite=T):
+        props = self.props
+        atoms = self.atoms
+        atoms.props.update( props )
+        if not os.path.exists(fo):
+            atoms.write(fo)
+        else:
+            if overwrite:
+                atoms.write(fo)
+            else:
+                try:
+                  for p in cmdout1("sed -n '2p' %s"%fo).split():
+                    k, v = p.split('=')
+                    atoms.props.update( {k:eval(v)} )
+                except:
+                  print('   ** no pre-existing prop found in xyz file')
+                atoms.write(fo)
+
+
+if __name__ == "__main__":
+
+    import ase, sys
+    import argparse as ap
+
+    ps = ap.ArgumentParser()
+    ps.add_argument('-p', '--patts', dest='patts', nargs='*', type=str, help='patterns to be matched')
+    ps.add_argument('-k', '--keys',  dest='keys', nargs='*', type=str, help='property to be written to xyz file')
+    ps.add_argument('-c' , '--cols', nargs='*', type=int, help='position of matched value. default to the last entry')
+    ps.add_argument('-ow', action='store_true', help='overwrite xyz file?')
+    ps.add_argument('-i', '--ipts', dest='fs', nargs='*', type=str, help='Input files to be processed')
+
+    ag = ps.parse_args( sys.argv[1:] )
+    ow = ag.ow #{'T':T, 'F':F}[ag.ow]
+
+    if ag.patts is None:
+        ag.patts = []
+        ag.cols = []
+        ag.keys = []
+    else:
+        if ag.cols is None:
+            ag.cols = [-1]
+        print('patts=', [ "%s"%pt for pt in ag.patts ])
+
+    for f in ag.fs:
+        print(' now ', f)
+        obj = molprojob(f, ag.patts, ag.cols, ag.keys)
+        obj.write(f[:-4]+'.xyz', ow)
 

@@ -5,7 +5,7 @@ import os, sys
 
 #import chemcoord as cc
 
-import cheminfo.rw.xyz as crx
+import aqml.cheminfo.rw.xyz as crx
 import tempfile as tpf
 import numpy as np
 import re
@@ -212,8 +212,8 @@ from berny import Berny, geomlib, optimize
 import tempfile
 import subprocess
 import shutil
-import cheminfo.molecule.core as cmc
-import cheminfo.core as cc
+import aqml.cheminfo.molecule.core as cmc
+import aqml.cheminfo.core as cc
 import networkx as nx
 
 def copy_class(objfrom, objto, names):

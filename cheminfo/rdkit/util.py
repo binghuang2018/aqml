@@ -14,7 +14,7 @@ import ase.data as ad
 import os, sys, re, copy
 import ase, openeye
 
-import cheminfo.math as cim
+import aqml.cheminfo.math as cim
 
 global Rdic, Cdic, Rdic_Z, Cdic_Z, dic_fmt, cnsDic
 Cdic = {'H':1, 'Be':2, 'B':3, 'C':4, 'N':5, 'O':6, 'F':7, \

@@ -193,7 +193,7 @@ class mopac(object):
 
 
     def write_sdf(self):
-        import cheminfo.OEChem as cio
+        import aqml.cheminfo.OEChem as cio
         assert type(self.obj) is str and self.obj[-3:].lower() in ['sdf', 'mol',]
         s = cio.StringM(self.obj)
         s.coords = self.atoms.positions

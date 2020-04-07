@@ -5,21 +5,21 @@ from rdkit import Chem
 from rdkit.Chem import AllChem, TorsionFingerprints
 from rdkit.Geometry.rdGeometry import Point3D
 from rdkit.ML.Cluster import Butina
-import cheminfo.openbabel.obabel as cob
+import aqml.cheminfo.openbabel.obabel as cob
 import scipy.spatial.distance as ssd
 import numpy as np
 from io2.gaussian_reader import GaussianReader as GR0
 #import io2.xyz as ix
-from cheminfo.molecule.molecule import *
-from cheminfo.molecule.nbody import NBody
-from cheminfo.rw.xyz import write_xyz
-from cheminfo.core import *
-#import cheminfo.molecule.amon_f as cma
-import cheminfo.oechem.amon as coa
+from aqml.cheminfo.molecule.molecule import *
+from aqml.cheminfo.molecule.nbody import NBody
+from aqml.cheminfo.rw.xyz import write_xyz
+from aqml.cheminfo.core import *
+#import aqml.cheminfo.molecule.amon_f as cma
+import aqml.cheminfo.oechem.amon as coa
 import indigo
 import tempfile as tpf
-import cheminfo.rdkit.core as crk
-import deepdish as dd
+import aqml.cheminfo.rdkit.core as crk
+import cml.sd as dd
 try:
     import representation.x as sl
 except:
@@ -203,7 +203,7 @@ class AmonDict(object):
         fcanr: file containing cononical SMILES for reference (from which conformers
                 were generated)
         """
-        self.ctk = ctk # cheminfomatic toolkit to be used, rdkit, indigo, openbabael or oechem
+        self.ctk = ctk # aqml.cheminfomatic toolkit to be used, rdkit, indigo, openbabael or oechem
 
         if fd[-1] == '/': fd = fd[:-1]
         self.fda = fd
@@ -289,7 +289,7 @@ class AmonDict(object):
             c2amap = np.array(c2amap,dtype=int)
 
             if cmaps[0]:
-                # now update maps in *.h5 file
+                # now update maps file
                 _maps = cmaps[1]
                 nt, ncmax = _maps.shape
                 icsmax = np.arange(ncmax).astype(int)
@@ -703,14 +703,14 @@ class AmonQ(object):
         #print 'amons = ', self.amons
 
         use_dic = T
-        if self.cmaps[0]: # use cids from maps.h5
+        if self.cmaps[0]: # use cids from maps.pkl
             cmaps = self.cmaps[1]
             use_dic = F
             nm = len(cmaps)
             cmap = cmaps[self.idQ]; n1 = len(cmap)
             ics0 = np.arange(n1)
             if (cmap==0).sum()>1: # old algo, `maps array padded with 0
-                raise '#plz regenrate amons using new algo, padded with -1 instead of 0 in `maps.h5'
+                raise '#plz regenrate amons using new algo, padded with -1 instead of 0 in `maps.pkl`'
             cids0 = list(cmap[cmap>-1])
             aids0 = np.unique([ self.c2amap[ic] for ic in cids0 ])
         else: # select amons from a dict
@@ -739,7 +739,7 @@ class AmonQ(object):
             for _aid in aids0:
                 if use_dic: # use amons dictionary
                     cids_t = self.a2cmap[_aid]
-                else: # use ids from `maps.h5
+                else: # use ids from map file
                     cids_t = list( set(self.a2cmap[_aid]).intersection(cids0) )
                 cids = np.array(cids_t,dtype=int)
                 #print ' -- cids = ', cids_t

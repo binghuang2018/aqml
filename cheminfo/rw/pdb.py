@@ -84,13 +84,13 @@ COLUMNS       DATA  TYPE      FIELD        DEFINITION
 """
 
 import numpy as np
-from cheminfo.core import *
+import aqml.cheminfo as co
 
-def write_pdb(images, fileobj=None, cell=None, prop={}):
+def write_pdb(images, fileobj=None, cell=None, prop={}, sort_atom=False):
     """Write images to PDB-file.
     images could be a tuple (symbols,coords,charges,bom) or a list
-    of tuples [ (symbols_1,coords_1,charges_1,bom_1),
-                (symbols_2,coords_2,charges_2,bom_2),
+    of tuples [ (symbols_1,charges_1,bom_1,coords_1),
+                (symbols_2,charges_2,bom_2,coords_2),
                 ... ]
     """
 
@@ -119,10 +119,10 @@ def write_pdb(images, fileobj=None, cell=None, prop={}):
 
     dic = {-1:'-', 1:'+'}
     for i, _image in enumerate(images):
-        nucs, ps, _chgs, bom = _image
+        nucs, _chgs, bom, ps = _image
         bom = bom.astype(np.int)
         if not isinstance(nucs[0], str):
-            symbs = [ chemical_symbols[_iz] for _iz in nucs ]
+            symbs = [ co.chemical_symbols[_iz] for _iz in nucs ]
         else:
             symbs = nucs
         scs = []

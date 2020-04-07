@@ -29,8 +29,8 @@ class UniversalCalculator(object):
 
 import io2.molpro_reader as ir
 from ase.db import connect
-import cheminfo.oechem.oechem as coo
-import cheminfo.molecule.molecule as cmm
+import aqml.cheminfo.oechem.oechem as coo
+import aqml.cheminfo.molecule.molecule as cmm
 
 
 all_properties = ['energy', 'forces', 'stress', 'dipole',

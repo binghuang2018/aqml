@@ -2,7 +2,7 @@
 
 from openeye import oechem
 #from openeye.oechem import *
-import cheminfo as co
+import aqml.cheminfo as co
 import networkx as nx
 import itertools as itl
 import scipy.spatial.distance as ssd
@@ -11,15 +11,15 @@ import numpy as np
 import ase.io as aio
 import ase.data as ad
 import ase, os, sys, re, copy
-import cheminfo as co
-import cheminfo.core as cc
-import cheminfo.math as cim
-import cheminfo.graph as cg
-from cheminfo.molecule.elements import Elements
-import cheminfo.molecule.core as cmc
-import cheminfo.molecule.geometry as GM
-import cheminfo.molecule.nbody as MB
-import cheminfo.rw.ctab as crc
+import aqml.cheminfo as co
+import aqml.cheminfo.core as cc
+import aqml.cheminfo.math as cim
+import aqml.cheminfo.graph as cg
+from aqml.cheminfo.molecule.elements import Elements
+import aqml.cheminfo.molecule.core as cmc
+import aqml.cheminfo.molecule.geometry as GM
+import aqml.cheminfo.molecule.nbody as MB
+import aqml.cheminfo.rw.ctab as crc
 import functools as tools
 import tempfile as tpf
 
@@ -506,12 +506,13 @@ class newmol(object):
         for i in range(na):
             for j in range(i+1,na):
                 if bom[i,j] > 0:
+                    #print('i,j=',i,j,bom[i,j])
                     _ = newm.NewBond(ats[i],ats[j], int(bom[i,j]) )
         oechem.OEFindRingAtomsAndBonds(newm)
         oechem.OEAssignAromaticFlags(newm, oechem.OEAroModel_OpenEye)
         if coords is not None:
             newm.SetDimension(3)
-        self.zs = zs
+        self.zs = np.array(zs, dtype=int)
         #assert
         self.chgs = chgs
         self.bom = bom
@@ -837,7 +838,7 @@ class newmol(object):
 
     def get_is_resonated(self):
         """ a mol is resonated if the number of alternave structures .lt. 1 """
-        import cheminfo.rdkit.resonance as crr
+        import aqml.cheminfo.rdkit.resonance as crr
         obj = crr.ResonanceEnumerator(self.rdmol, kekule_all=T)
         tf = ( obj.nmesomers > 1 )
         return tf
@@ -2136,61 +2137,11 @@ class newmol(object):
         neutralise a molecule, typically a protein
         """
         m = self.copy()
-        obsolete = """zs = self.zs
-        numHs = []; tvs = []; atoms = []
-        for ai in m.GetAtoms():
-            atoms.append( ai )
-            numHs.append( ai.GetExplicitHCount() + ai.GetImplicitHCount() )
-            tvs.append( ai.GetValence() )
-
-        self.get_charged_pairs()
-        for i in range(self.na):
-            ai = atoms[i]
-            ci = self.charges[i]
-            nhi = numHs[i]
-            if ci != 0:
-                if i not in self.cpairs.ravel():
-                    msg = ' zi = %d, tvi = %d, ci = %d, neib = %d'%(self.zs[i], tvs[i], ci, cnsDic[zs[i]])
-                    assert tvs[i] - ci == cnsDic[zs[i]], msg
-                    if nhi == 0 and ci > 0:
-                        # in the case of >[N+]<, i.e., N with CoordNum = 4
-                        # we don't have to do anything
-                        continue
-                    ai.SetFormalCharge( 0 )
-                    ai.SetImplicitHCount( nhi - ci )
-                    print('i, zi, ci, nH = ', i, self.zs[i], ci, numHs[i])
-                else:
-                    print('atom %d in a bond like ~[A+]~[B-]'%i) """
         oechem.OERemoveFormalCharge(m) # note that for quaternary amines (>[N+]<), charges retain
         oechem.OEAddExplicitHydrogens(m)
         oechem.OESet3DHydrogenGeom(m)
         # note that H attached to sp2-hybridized and charged N, e.g., N in =[NH2+] won't
         # be removed by OERemoveFormalCharge(), now we do this manually
-
-        obsolete="""cnsDic = {5:3, 6:4, 7:3, 8:2, 9:1, 14:4, 17:1}
-
-        bom = get_bom(m)
-        zs = []; chgs = []
-        for ai in m.GetAtoms():
-            zi = ai.GetAtomicNum()
-            chgi = ai.GetFormalCharge()
-            nhi = ai.GetExplicitHCount() + ai.GetImplicitHCount()
-            tvi = ai.GetValence()
-            if chgi != 0:
-                if chgi==1 and nhi==0: continue
-                ia = ai.GetIdx()
-                _bo = bom[ia]
-                bosi = list( _bo[_bo>0] ); bosi.sort(reverse=True)
-                msg = ' zi=%d, tvi=%d, chgi=%d, bosi=%d'%(zi,tvi,chgi,''.join(bosi))
-                assert tvi-chgi == cnsDic[zi], msg # check if valency is ok
-                assert chgi==1 and zi==7 and nhi>=1
-                ai.SetFormalCharge( 0 )
-                for bond in ai.GetBonds():
-                    aj = bond.GetNbr(ai)
-                    if aj.GetAtomicNum() == 1:
-                        m.DeleteAtom( aj ) # remove the 1st H atom found
-                        break
-        oechem.OEFindRingAtomsAndBonds(m) """
         self.mol = m
 
     def annihilate_chgs(self):

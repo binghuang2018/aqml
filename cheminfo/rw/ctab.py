@@ -21,7 +21,7 @@ M  END
 """
 
 import numpy as np
-from cheminfo.core import *
+import aqml.cheminfo as co
 
 def write_ctab(zs, chgs, bom, coords=None, isotopes=[], prop={}, \
                sdf=None, sort_atom=True):
@@ -31,6 +31,7 @@ def write_ctab(zs, chgs, bom, coords=None, isotopes=[], prop={}, \
     sort_atom: if set to T, H atoms will be pushed to the end
                of atom list
     """
+    zs = np.array(zs, dtype=int)
     na = zs.shape[0]
     ias = np.arange(na)
     ias_heav = ias[zs > 1]
@@ -45,15 +46,16 @@ def write_ctab(zs, chgs, bom, coords=None, isotopes=[], prop={}, \
     ctab += fmt1%( na, nb, 0,0,0,0)
 
     fmt1 = '%10.4f'*3 + ' %-3s'
-    fmt2 = '%2d' + '%3d'*11 + '\n'
+    fmt2 = '%2s' + '%3d'*11 + '\n'
     str2 = fmt2%(tuple([0,]+ [0,]*11))
     fmt = fmt1 + str2
+    #print('fmt="', fmt, '"')
     iasU = np.concatenate((ias_heav,iash))
     for i in range(na):
         ia = iasU[i]
         px, py, pz = coords[ia]
         zi = zs[ia]
-        ctab += fmt%(px, py, pz, chemical_symbols[zi])
+        ctab += fmt%(px, py, pz, co.chemical_symbols[zi])
 
     # write bonds between heav atoms
     bcnt = 0

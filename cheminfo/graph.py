@@ -1,5 +1,5 @@
 
-#import cheminfo.fortran.famon as fm
+#import aqml.cheminfo.fortran.famon as fm
 import networkx as nx
 import numpy as np
 import multiprocessing
@@ -105,7 +105,7 @@ class Graph(object):
         if nx.is_connected(G):
             cliques = [ list(range(n)), ]
         else:
-            sub_graphs = nx.connected_component_subgraphs(G)
+            sub_graphs = [ G.subgraph(c) for c in nx.connected_components(G) ]
             for i, sg in enumerate(sub_graphs):
                 cliques.append( list(sg.nodes()) )
         #nc, iass = fm.connected_components(g1)

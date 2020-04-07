@@ -1,0 +1,35 @@
+#!/usr/bin/env python
+
+import numpy as np
+from aqml.cheminfo.lo.dmml import *
+from aqml.cheminfo.lo.dmx import *
+import ase.io as aio
+
+np.set_printoptions(formatter={'float': '{: 0.8f}'.format})
+
+#fns = [ 'test/'+fi+'.xyz' for fi in ['c04h06','c06h08','c08h10', 'c12h14','c16h18'] ]
+#fns = [ 'test/'+fi+'.xyz' for fi in ['c08h10','c12h14']]
+fi = 'c14h30'
+fns = [ 'test/'+fi+si+'.xyz' for si in ['_a1','_a2','_a3','_a4','_a5','_a6', ''] ]
+idx = None # [42] #range(35,40) #[0,1,2,3,4] # 41] 
+idx2 = None #[41] #range(30,35) #range(5,10) #range(35,40)+[49] # 
+
+basis='sto-3g'; meth='b3lyp'
+spin=0; a=0.; verbose=3
+
+zs = []; coords = []; nas = []
+for fi in fns:
+    mi = aio.read(fi)
+    nas.append(len(mi)); zs += list(mi.numbers); coords += list(mi.positions)
+nas = np.array(nas,np.int)
+zs = np.array(zs,np.int)
+coords = np.array(coords)
+
+rc_x = 3.6
+rc_dm = 4.8 #6.0
+xd = XData(nas, zs, coords, rc_x=rc_x, rc_dm=rc_dm)
+yd = YData(nas, zs, coords, rc_dm=rc_dm)
+obj = dmml(xd,yd)
+#obj.run([0],[1], c=100, l=1e-6)
+obj.run([0,1,2,3,4,5],[6,], c=0.0001, l=1e-9)
+

@@ -1,7 +1,7 @@
 
 import os, sys
 import numpy as np
-import cheminfo.molecule.geometry as cmg
+import aqml.cheminfo.molecule.geometry as cmg
 
 T,F = True,False
 
@@ -94,7 +94,7 @@ class NBody(object):
             assert len(obj) == 2
             zs, coords = obj
         else:
-            #sa = obj.__str__() # cheminfo.core.molecules object
+            #sa = obj.__str__() # aqml.cheminfo.core.molecules object
             #if ('atoms' in sa) or ('molecule' in sa):
             try:
                 zs, coords = obj.zs, obj.coords

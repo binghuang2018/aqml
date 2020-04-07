@@ -3,10 +3,10 @@
 import io2, re, os, sys
 import numpy as np
 from io2.gaussian_reader import GaussianReader as GR0
-import cheminfo.molecule.molecule as cmm
-from cheminfo.core import *
-import cheminfo.rdkit.core as crk
-from cheminfo.rw.ctab import *
+import aqml.cheminfo.molecule.molecule as cmm
+from aqml.cheminfo.core import *
+import aqml.cheminfo.rdkit.core as crk
+from aqml.cheminfo.rw.ctab import *
 import scipy.spatial.distance as ssd
 
 h2kc = io2.Units().h2kc

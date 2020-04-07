@@ -3,7 +3,7 @@
 
 
 
-import cheminfo.RDKit as cir
+import aqml.cheminfo.RDKit as cir
 
 ###############
 class cg(object):

@@ -1,8 +1,8 @@
 
-
+from math import cos, sin
 import numpy as np
 import os
-import cheminfo.rw.xyz as rx
+from .rw import xyz as rx
 try:
     from importlib import reload
 except:
@@ -45,7 +45,7 @@ chemical_symbols_lowercase = [ si.lower() for si in chemical_symbols ]
 # reference coordination numbers
 cnsr = { 1:1,  3:1,  4:2,  5:3,  6:4,  7:3,  8:2, 9:1, \
         11:1, 12:2, 13:3, 14:4, 15:3, 16:2, 17:1, \
-         35:1, 53:1}
+        35:1, 50:4, 53:1}
 
 atomic_numbers = {}
 for Z, symbol in enumerate(chemical_symbols):
@@ -119,6 +119,53 @@ class atoms(object):
             so += '{:>6} {:15.8f} {:15.8f} {:15.8f}{chg}{nmr}{cls}{grad}\n'.format(si,x,y,z,chg=chgi,nmr=nmri,cls=clsi,grad=gradi)
             icnt += 1
         with open(f,'w') as fid: fid.write(so)
+
+
+    def rotate(self, a, v=None, center=(0, 0, 0)):
+        """
+        Rotate atoms based on a vector and an angle, or two vectors.
+        """
+        normv = np.linalg.norm(v)
+        if normv == 0.0:
+            raise ZeroDivisionError('Cannot rotate: norm(v) == 0')
+        assert isinstance(a, (float, int)), "`a is not float/int!"
+        a *= np.pi / 180
+        v /= normv
+        c = cos(a)
+        s = sin(a)
+        center = np.array(center)
+        p = self.coords - center
+        self.coords[:] = (c * p -
+                          np.cross(p, s * v) +
+                          np.outer(np.dot(p, v), (1.0 - c) * v) +
+                          center)
+
+    def copy(self):
+    	return atoms(self.zs, self.coords, self.props)
+
+
+    def view(self, data=None, boundary=None, origin=None, iso=None, holdon=F):
+        import visualization.ipyvol as pv
+        obj = pv.draw_molecule(self, boundary=boundary, origin=origin, \
+                 data=data, iso=iso, holdon=holdon)
+        obj.show()
+
+    @property
+    def centroid(self):
+        if not hasattr(self, '_centroid'):
+            self._centroid = get_centroid()
+        return self._centroid
+
+    def get_centroid(self):
+        """Return the average location.
+        Args:
+            None
+        Returns:
+            :class:`numpy.ndarray`:
+        """
+        return np.mean(self.coords, axis=0)
+
+
 
 class molecule(atoms):
     """

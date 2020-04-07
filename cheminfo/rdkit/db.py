@@ -1,7 +1,7 @@
 
 import io2, os, sys
 import numpy as np
-import cheminfo.rdkit.core as crk
+import aqml.cheminfo.rdkit.core as crk
 import rdkit.Chem.rdmolfiles as rcr
 from rdkit import Chem
 

@@ -4,10 +4,10 @@ from time import time
 from functools import reduce
 import numpy as np
 from pyscf import gto, scf
-from cheminfo.core import *
-import cheminfo.graph as cg
-from cheminfo.molecule.elements import *
-from cheminfo.molecule.core import *
+from aqml.cheminfo.core import *
+import aqml.cheminfo.graph as cg
+from aqml.cheminfo.molecule.elements import *
+from aqml.cheminfo.molecule.core import *
 from pyscf.lo.orth import pre_orth_ao_atm_scf
 from pyscf.tools import molden
 

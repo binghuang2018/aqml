@@ -11,7 +11,7 @@ points of molecule
 """
 
 from openeye.oechem import *
-import cheminfo.OEChem as cio
+import aqml.cheminfo.OEChem as cio
 import numpy as np
 import itertools as itl
 

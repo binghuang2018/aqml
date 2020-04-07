@@ -8,24 +8,24 @@ from openeye.oechem import *
 import numpy as np
 import networkx.algorithms.isomorphism  as iso
 import networkx as nx
-import cheminfo.oechem.oechem as coo
-from cheminfo.molecule.subgraph import *
-import cheminfo.rdkit.core as cir
-import cheminfo as co
-from cheminfo.rw.ctab import write_ctab
+import aqml.cheminfo.oechem.oechem as coo
+from aqml.cheminfo.molecule.subgraph import *
+import aqml.cheminfo.rdkit.rdmol as cir
+import aqml.cheminfo as co
+from aqml.cheminfo.rw.ctab import write_ctab
 from rdkit import Chem
 import scipy.spatial.distance as ssd
-import cheminfo.openbabel.obabel as cib
+
 import multiprocessing
-import cheminfo.core as cic
-import cheminfo.math as cim
-import deepdish as dd
+import aqml.cheminfo.core as cic
+import aqml.cheminfo.math as cim
+import cml.sd as dd
 import itertools as itl
 import tempfile as tpf
-import cheminfo.graph as cg
-from cheminfo.molecule.elements import Elements
-import cml.famoneib as fa
-import cheminfo.oechem.core as coc
+import aqml.cheminfo.graph as cg
+from aqml.cheminfo.molecule.elements import Elements
+#import cml.famoneib as fa
+import aqml.cheminfo.oechem.core as coc
 
 global dsHX
 #                 1.10
@@ -345,6 +345,7 @@ class Sets(object):
             #    print(' ** info: param.gopt switched to PM6-D3H4')
 # the default case, use openbabel to do constrained optimization
             if self.param.gopt.lower() in ['obff']:
+                import aqml.cheminfo.openbabel.obabel as cib
                 ob1 = cib.Mol( ctab, fmt='sdf' )
                 ob1.optg_c(iconstraint=3, ff="MMFF94", \
                            optimizer='cg', steps=[30,90], ic=True)
@@ -1327,7 +1328,7 @@ class ParentMols(object):
             if iat is not None:
                 fdn += '-iat%d'%iat # absolute idx
             fcan = fdn + '/' + fdn + '.can'
-            h5f = '%s/map.h5'%fdn
+            h5f = '%s/map.pkl'%fdn
         else:
             if label in ['auto']:
                 label = 'g%d'%k0
@@ -1340,7 +1341,7 @@ class ParentMols(object):
                 if self.iextl:
                     label += '-extl'
             fcan = label + '.can'
-            h5f = label + '/map.h5'
+            h5f = label + '/map.pkl'
             fdn = label
             for fd in [fdn, fdn+'/i-raw/']:
                 if not os.path.exists(fd):
@@ -1395,9 +1396,9 @@ class ParentMols(object):
         #### aaaa
         for ir in range(nmt):
             string = strings[ir]
-            if iprt:
-                self.io.write('#Mid %d %s'%(ir+1, string))
-                print('#Mid %d %s'%(ir+1, string))
+            #if iprt:
+            #    self.io.write('#Mid %d %s'%(ir+1, string))
+            print('#Mid %d %s'%(ir+1, string))
 
             iqg = F # is query graph available?
             iqf = F # is query mol a file?
@@ -1842,7 +1843,7 @@ class ParentMols(object):
                 cans = seta.cans
                 self.cans = cans
                 if label is not None:
-                    h5f = label + '.h5'
+                    h5f = label + '.pkl'
                     dd.io.save(h5f, {'ids': np.array(ids,dtype=int), 'maps': seta.maps2} )
 
 

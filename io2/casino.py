@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-import cheminfo as co
-import cheminfo.core as cc
+import aqml.cheminfo as co
+import aqml.cheminfo.core as cc
 import os
 import numpy as np
 
