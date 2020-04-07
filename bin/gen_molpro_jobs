@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
 import os,sys
-import util.stropr as so
+import aqml.util.stropr as so
 import numpy as np
-import cheminfo.core as cc
+import aqml.cheminfo.core as cc
 
 T,F = True,False
 dct = dict(zip(['T','True','true','F','False','false'], [T,T,T,F,F,F]))

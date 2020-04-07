@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import os,sys
-import util.stropr as so
+import aqml.util.stropr as so
 
 def usage():
   print('batch_molpro -nj 1 -nthread 12 [files]')

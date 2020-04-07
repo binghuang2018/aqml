@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import os,sys
-import util.stropr as so
+import aqml.util.stropr as so
 
 def molpro_done_check(f):
   return 'Molpro calculation t' in open(f).readlines()[-1]

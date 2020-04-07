@@ -2,7 +2,7 @@
 
 import os,sys
 #from g09tools import *
-import util.stropr as so
+import aqml.util.stropr as so
 
 def g09_done_check(f):
     iok = os.system("grep 'Normal termination' %s"%f)

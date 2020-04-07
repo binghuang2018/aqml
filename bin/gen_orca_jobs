@@ -2,9 +2,9 @@
 
 import os, sys
 import numpy as np
-import util.stropr as so
-import cheminfo.core as cc
-import cheminfo.molecule.core as cmc
+import aqml.util.stropr as so
+import aqml.cheminfo.core as cc
+import aqml.cheminfo.molecule.core as cmc
 
 dic = {'T':True, 'F':False}
 
