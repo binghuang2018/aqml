@@ -30,11 +30,11 @@ gen_orca_jobs -loose -t optg -m b3lyp -b vdz -n 1 g7/*.sdf
 ```
 The option `-n 1` specifies the number of processes to be used. Choose a larger number to speed up computations. For target molecule (i.e., `target/01.sdf`), remove the option `-loose`.
 
-  - Then run orca4 jobs through calling the script `batch_orca`:
+  - Then run orca4 jobs serially through calling the script `batch_orca`:
 ```bash
 batch_orca g7/*.com target/*.com >out1 &
 ```
-Note: before running, the user needs to reset the path to `orca4` in file `which batch_orca_base` (located under `$AQML/bin`, where `$AQML` denotes the root directory of the `aqml` package).
+
 
 Reference input & output files of orca4 jobs are provided under folder `reference/` with suffix `.com` and `.out`, respectively.
 
