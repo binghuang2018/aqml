@@ -3,8 +3,8 @@
 
 touch __init__.py
 
-export AQML_ROOT=$PWD
-export CHEMPACK=RDKIT # or OECHEM
+#export AQML_ROOT=$PWD
+#export CHEMPACK=RDKIT # or OECHEM
 
 # Build core ML library (mainly fortran code for
 # time-consuming part of compuation)
