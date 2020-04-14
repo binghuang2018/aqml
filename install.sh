@@ -27,9 +27,11 @@ then
     echo "system not supported"
     exit 1
   fi
-elif [[ "$CHEMPACK" == "RDKIT" ]]; then
-  conda install -y -c rdkit rdkit
 fi
+
+# install rdkit (version>=2019)
+conda install -y -c rdkit rdkit
+
 
 pip install ase networkx imolecule
 
@@ -37,7 +39,7 @@ pip install ase networkx imolecule
 
 # at last,
 echo "export AQML_ROOT=$AQML_ROOT" >>~/.bashrc
-echo "export PYTHONPATH=\$AQML_ROOT:\$PYTHONPATH" >>~/.bashrc
+echo "export PYTHONPATH=\$AQML_ROOT/../:\$PYTHONPATH" >>~/.bashrc
 echo "export PATH=\$AQML_ROOT/bin:\$PATH" >>~/.bashrc
 
 #source ~/.bashrc
