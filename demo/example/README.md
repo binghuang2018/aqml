@@ -16,14 +16,19 @@ Then a folder named `g7` would be created, including sdf files of corresponding 
 ## Running quantum chemical calculations
 
 Before preceding, a copy of the quantum chemistry program `orca4' has to be acquired (for downloads, fill the registration form at https://cec.mpg.de/orcadownload/).
+Once `orca` is installed, decompress and set environmental variable:
+
+```bash
+export orca4=/path/of/orca_binary
+```
 
 For generation of quantum chemical reference data for training/test, here we consider only the ground state geometry and energy of the target QM9 molecule calculated at B3LYP/cc-pVDZ level. Three consecutive steps are necessary:
 
   - First generate input files for ORCA 4:
 ```bash
-gen_orca_jobs -loose -t optg -m b3lyp -b vdz -n 1 g7/*.sdf target/*.sdf
+gen_orca_jobs -loose -t optg -m b3lyp -b vdz -n 1 g7/*.sdf 
 ```
-The option `-n 1` specifies the number of processes to be used. Choose a larger number to speed up computations.
+The option `-n 1` specifies the number of processes to be used. Choose a larger number to speed up computations. For target molecule (i.e., `target/01.sdf`), remove the option `-loose`.
 
   - Then run orca4 jobs through calling the script `batch_orca`:
 ```bash

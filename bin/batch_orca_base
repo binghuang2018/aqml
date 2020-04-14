@@ -2,7 +2,8 @@
 
 fs=$*
 
-exe=/apps/orca/orca_4_0_1_2_linux_x86-64_openmpi202/orca 
+[[ "$orca4" = "" ]] && { echo '#ERROR: please set environmental variable `orca`!'; exit; }
+exe=$orca4 #/apps/orca/orca_4_0_1_2_linux_x86-64_openmpi202/orca 
 for f in $fs
 do
   echo $f

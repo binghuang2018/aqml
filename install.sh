@@ -18,9 +18,11 @@ sys=`uname`
 if [[ "$CHEMPACK" == "OECHEM" ]]
 then
   if [[ "$sysname" == "Linux" ]]; then
-    pip install -i https://pypi.anaconda.org/openeye/simple openeye-toolkits-python3-linux-x64
+    #pip install -i https://pypi.anaconda.org/openeye/simple openeye-toolkits-python3-linux-x64
+    pip install -i https://pypi.anaconda.org/OpenEye/simple OpenEye-toolkits
   elif [[ "$sysname" == "Darwin" ]]; then
-    pip install -i https://pypi.anaconda.org/openeye/simple openeye-toolkits-python3-osx-x64
+    #pip install -i https://pypi.anaconda.org/openeye/simple openeye-toolkits-python3-osx-x64
+    pip install -i https://pypi.anaconda.org/OpenEye/simple OpenEye-toolkits
   else
     echo "system not supported"
     exit 1
