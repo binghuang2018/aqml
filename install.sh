@@ -14,7 +14,7 @@ python setup.py install
 
 
 # dependencies
-sys=`uname`
+sysname=`uname`
 if [[ "$CHEMPACK" == "OECHEM" ]]
 then
   if [[ "$sysname" == "Linux" ]]; then
@@ -40,5 +40,5 @@ echo "export AQML_ROOT=$AQML_ROOT" >>~/.bashrc
 echo "export PYTHONPATH=\$AQML_ROOT:\$PYTHONPATH" >>~/.bashrc
 echo "export PATH=\$AQML_ROOT/bin:\$PATH" >>~/.bashrc
 
-source ~/.bashrc
+#source ~/.bashrc
 

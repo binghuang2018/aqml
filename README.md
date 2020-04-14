@@ -95,7 +95,12 @@ export CHEMPACK=OECHEM
 ./install.sh
 ```
 
-when oechem is used , one has to also install the license file through
+- at last, 
+```bash
+source ~/.bashrc
+```
+
+when `oechem` is used, one has to also install the license file through
 ```bash
 echo "export OE_LICENSE=/path/to/oe_license.txt" >>~/.bashrc; source ~/.bashrc
 ```
