@@ -40,9 +40,9 @@ Reference input & output files of orca4 jobs are provided under folder `referenc
 
   - Convert output files to xyz format once all calculations are done:
 ```bash
-orca2xyz g7/*.out target/*.out
+orca2xyz -p e g7/*.out target/*.out
 ```
-The resulting `xyz` files contain relaxed geometries, the same as the usual `xyz` file format-wise. Poperties (only energy as the default case) is written to the second line, with the format of, say `b3lypvdz=-40.0321`, which means the single point energy calculated at the level B3LYP/cc-pVDZ is -40.0321 Hartree (Atomic unit is the default for all properties in `xyz` files).
+The resulting `xyz` files contain relaxed geometries, the same as the usual `xyz` file format-wise. Poperties (only energy as the default case) is written to the second line, with the format of, say `b3lypvdz=-40.0321`, meaning the single point energy calculated at the level B3LYP/cc-pVDZ is -40.0321 Hartree (Atomic unit is the default for all properties in `xyz` files).
 
 ## AML prediction
 
