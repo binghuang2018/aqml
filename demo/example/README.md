@@ -15,8 +15,8 @@ Then a folder named `g7` would be created, including sdf files of corresponding 
 
 ## Running quantum chemical calculations
 
-Before preceding, a copy of the quantum chemistry program `orca4' has to be acquired (for downloads, fill the registration form at https://cec.mpg.de/orcadownload/).
-Once `orca` is installed, decompress and set environmental variable:
+Before preceding, a copy of the quantum chemistry program `orca 4` has to be acquired (for downloads, fill the registration form at https://cec.mpg.de/orcadownload/).
+Once `orca` is installed, specify the following environment variable:
 
 ```bash
 export orca4=/path/of/orca_binary
