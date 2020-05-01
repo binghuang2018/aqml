@@ -2,13 +2,13 @@
 
 import os,sys,re
 from ase import Atom, Atoms
-import io2
-import io2.data as data
-from io2.gaussian_reader import GaussianReader as GR0
+import aqml.io2 as io2
+import aqml.io2.data as data
+from aqml.io2.gaussian_reader import GaussianReader as GR0
 import ase.data as ad
 import numpy as np
 import multiprocessing
-import cheminfo as co
+import aqml.cheminfo as co
 
 import fortranformat as ff
 

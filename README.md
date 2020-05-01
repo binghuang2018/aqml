@@ -203,7 +203,7 @@ Meanwhile, the same files (`g5.out` and directory `g5/`) would be generated as i
 
 # Demo
 
-A Demo (see demo/README.md for detail) is provided for an exemplified QM9 molecule (molecule I in Fig. 2C of reference [huang2017dna], also shown below),
+A Demo (see demo/README.md for detail) is provided for an exemplified QM9 molecule (molecule I in Fig. 2C of reference [amons], also shown below),
 
 <img src="demo/demo.png" width="300">
 
@@ -224,10 +224,10 @@ If you have used `aqml` in your research, please consider citing these papers:
 
 1. "Understanding molecular representations in machine learning: The role of uniqueness and target similarity", B. Huang, OAvL,J. Chem. Phys. (Communication) 145 161102 (2016), https://arxiv.org/abs/1608.06194
 2. "Boosting quantum machine learning models with multi-level combination technique: Pople diagrams revisited" P. Zaspel, B. Huang, H. Harbrecht, OAvL submitted to JCTC (2018) https://arxiv.org/abs/1808.02799
-3. "The DNA of chemistry: Scalable quantum machine learning with amons", B. Huang, OAvL, arXiv:1707.04146, 2017, https://arxiv.org/abs/1707.04146
+3. "Efficient, accurate, scalable, and transferable quantum machine learning with am-ons", B. Huang, OAvL, arXiv:1707.04146, 2020, https://arxiv.org/abs/1707.04146
 
 ```bash
-@article{BAML,
+@article{baml,
    author = "Huang, Bing and von Lilienfeld, O. Anatole",
    title = "Communication: Understanding molecular representations in machine learning: The role of uniqueness and target 
 similarity",
@@ -239,7 +239,7 @@ similarity",
    pages = "",
    doi = "http://dx.doi.org/10.1063/1.4964627"
 }
-@article{zaspel2018boosting,
+@article{cqml,
   title={Boosting quantum machine learning models with a multilevel combination technique: pople diagrams revisited},
   author={Zaspel, Peter and Huang, Bing and Harbrecht, Helmut and von Lilienfeld, O Anatole},
   journal={Journal of chemical theory and computation},
@@ -250,12 +250,12 @@ similarity",
   publisher={ACS Publications},
   doi = {https://doi.org/10.1021/acs.jctc.8b00832}
 }
-@article{huang2017dna,
-  title={The ``DNA'' of chemistry: Scalable quantum machine learning with ``amons''},
+@article{amons,
+  title={Efficient, accurate, scalable, and transferable quantum machine learning with am-ons},
   author={Huang, Bing and von Lilienfeld, O Anatole},
   journal={arXiv preprint arXiv:1707.04146},
   url={https://arxiv.org/abs/1707.04146},
-  year={2017}
+  year={2020}
 }
 
 ```
