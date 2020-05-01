@@ -29,12 +29,12 @@ then
   fi
 fi
 
+
+# install numpy, scipy and others
+pip install numpy scipy ase networkx imolecule
+
 # install rdkit (version>=2019)
 conda install -y -c rdkit rdkit
-
-
-pip install ase networkx imolecule
-
 
 
 # at last,

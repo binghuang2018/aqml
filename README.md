@@ -105,7 +105,7 @@ when `oechem` is used, one has to also install the license file through
 echo "export OE_LICENSE=/path/to/oe_license.txt" >>~/.bashrc; source ~/.bashrc
 ```
 
-Alternatively, one can use `RDKit` by setting `export CHEMPACK=RDKIT`, however, relevant code is still buggy (for vdW systems only) and under development.
+In the near future, one can use `RDKit` by setting `export CHEMPACK=RDKIT`, without resorting to `OEChem`. Relevant code is still buggy (for vdW systems only) and under development.
 
 Now you are ready to go!
 

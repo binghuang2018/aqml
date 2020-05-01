@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-import re, os, sys, io2
+import re, os, sys
+import aqml.io2 as io2
 import aqml.cheminfo as co
 import aqml.cheminfo.core as cc
 import numpy as np
@@ -193,7 +194,10 @@ class orca(cc.molecule):
 class orcajob(object):
 
     def __init__(self, lb):
+        if lb[-4] == '.':
+            lb = lb[:-4]
         self.f = lb + '.out'
+        assert os.path.exists(self.f)
         self.label = lb
 
     @property
@@ -284,7 +288,7 @@ class orcajob(object):
 
     def get_basis(self):
         _bst = None
-        for b in self.bsts:
+        for b in bsts:
             if cmdout('grep -i %s %s'%(b,self.f)):
                 _bst = dctbo[b]
                 break
@@ -308,7 +312,7 @@ class orcajob(object):
             cmd = "grep 'FINAL SINGLE POINT' %s | tail -n 1 | awk '{print $NF}'"%self.f
             #print(cmd)
             e = eval( cmdout(cmd) ) # in hartree
-            es = {self.method: e, 'e':e}
+            es = {self.method: e} #, 'e':e}
         else:
             cmd = "grep 'SCF energy with basis' %s | awk '{print $5}'"%f
             bsts = [ bdct[si[:-1].lower()] for si in cmdout1(cmd) ]; #print(bsts)
