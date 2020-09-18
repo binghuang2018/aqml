@@ -222,11 +222,33 @@ covering the four essential aspects of AML:
 
 If you have used `aqml` in your research, please consider citing these papers:
 
-1. "Understanding molecular representations in machine learning: The role of uniqueness and target similarity", B. Huang, OAvL,J. Chem. Phys. (Communication) 145 161102 (2016), https://arxiv.org/abs/1608.06194
-2. "Boosting quantum machine learning models with multi-level combination technique: Pople diagrams revisited" P. Zaspel, B. Huang, H. Harbrecht, OAvL submitted to JCTC (2018) https://arxiv.org/abs/1808.02799
-3. "Efficient, accurate, scalable, and transferable quantum machine learning with am-ons", B. Huang, OAvL, arXiv:1707.04146, 2020, https://arxiv.org/abs/1707.04146
+1. Huang, B., von Lilienfeld, O.A. Quantum machine learning using atom-in-molecule-based fragments selected on the fly. Nat. Chem. (2020). https://doi.org/10.1038/s41557-020-0527-z
+2. AS Christensen, LA Bratholm, FA Faber, B Huang, A Tkatchenko, KR Muller, OA von Lilienfeld (2017) "QML: A Python Toolkit for Quantum Machine Learning" https://github.com/qmlcode/qml
+3. "Understanding molecular representations in machine learning: The role of uniqueness and target similarity", B. Huang, OAvL,J. Chem. Phys. (Communication) 145 161102 (2016), https://arxiv.org/abs/1608.06194
+4. "Boosting quantum machine learning models with multi-level combination technique: Pople diagrams revisited" P. Zaspel, B. Huang, H. Harbrecht, OAvL submitted to JCTC (2018) https://arxiv.org/abs/1808.02799
+
 
 ```bash
+@article{amons,
+	title = {Quantum machine learning using atom-in-molecule-based fragments selected on the fly},
+	issn = {1755-4349},
+	url = {https://www.nature.com/articles/s41557-020-0527-z},
+	doi = {10.1038/s41557-020-0527-z},
+	language = {en},
+	urldate = {2020-09-14},
+	journal = {Nature Chemistry},
+	author = {Huang, Bing and von Lilienfeld, O. Anatole},
+	month = sep,
+	year = {2020},
+	note = {Publisher: Nature Publishing Group},
+	pages = {1--7},
+}
+@article{christensen2017qml,
+  title={QML: A Python toolkit for quantum machine learning},
+  author={Christensen, AS and Faber, FA and Huang, B and Bratholm, LA and Tkatchenko, A and Muller, KR and von Lilienfeld, OA},
+  journal={URL https://github. com/qmlcode/qml},
+  year={2017}
+}
 @article{baml,
    author = "Huang, Bing and von Lilienfeld, O. Anatole",
    title = "Communication: Understanding molecular representations in machine learning: The role of uniqueness and target 
@@ -250,13 +272,4 @@ similarity",
   publisher={ACS Publications},
   doi = {https://doi.org/10.1021/acs.jctc.8b00832}
 }
-@article{amons,
-  title={Efficient, accurate, scalable, and transferable quantum machine learning with am-ons},
-  author={Huang, Bing and von Lilienfeld, O Anatole},
-  journal={arXiv preprint arXiv:1707.04146},
-  url={https://arxiv.org/abs/1707.04146},
-  year={2020}
-}
-
 ```
-
