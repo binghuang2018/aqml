@@ -58,7 +58,7 @@ The code was tested only under Linux/Mac OS.
 `aqml` is a python/fortran package that requires a number of dependencies:
 
 - `numpy` & `scipy`
-- `rdkit` or `oechem`: cheminformatic package (`oechem` needs for an academic license, which is free though)
+- `rdkit` & `oechem`: cheminformatic package (Running `oechem` needs a license, which is free for academic research)
 - `networkx` a Python package for the creation, manipulation, and study of the structure, dynamics, and functions of complex networks. [https://networkx.github.io/documentation/stable/install.html]
 - `ase`: Atomic Simulation Environment [https://wiki.fysik.dtu.dk/ase/install.html]
 
