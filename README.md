@@ -224,8 +224,8 @@ If you have used `aqml` in your research, please consider citing these papers:
 
 1. Huang, B., von Lilienfeld, O.A. Quantum machine learning using atom-in-molecule-based fragments selected on the fly. Nat. Chem. (2020). https://doi.org/10.1038/s41557-020-0527-z
 2. AS Christensen, LA Bratholm, FA Faber, B Huang, A Tkatchenko, KR Muller, OA von Lilienfeld (2017) "QML: A Python Toolkit for Quantum Machine Learning" https://github.com/qmlcode/qml
-3. "Understanding molecular representations in machine learning: The role of uniqueness and target similarity", B. Huang, OAvL,J. Chem. Phys. (Communication) 145 161102 (2016), https://arxiv.org/abs/1608.06194
-4. "Boosting quantum machine learning models with multi-level combination technique: Pople diagrams revisited" P. Zaspel, B. Huang, H. Harbrecht, OAvL submitted to JCTC (2018) https://arxiv.org/abs/1808.02799
+3. "Understanding molecular representations in machine learning: The role of uniqueness and target similarity", B. Huang, OAvL,J. Chem. Phys. (Communication) 145 161102 (2016). http://dx.doi.org/10.1063/1.4964627, https://arxiv.org/abs/1608.06194
+4. "Boosting quantum machine learning models with multi-level combination technique: Pople diagrams revisited" P. Zaspel, B. Huang, H. Harbrecht, OAvL J. Chem. Theory Comput. 2019, 15, 3, 1546–1559. https://doi.org/10.1021/acs.jctc.8b00832, https://arxiv.org/abs/1808.02799, 
 
 
 ```bash
