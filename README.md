@@ -218,7 +218,7 @@ covering the four essential aspects of AML:
 
 
 
-# Publications
+# References
 
 If you have used `aqml` in your research, please consider citing these papers:
 
