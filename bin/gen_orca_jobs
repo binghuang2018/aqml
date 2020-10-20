@@ -151,7 +151,7 @@ for f in fs:
     chg = 0 ###
     #print('zs=', mol.zs)
     rawm = cmc.RawMol(mol)
-    mols = rawm.monomers
+    mols = rawm.fragments #monomers
     n = len(mols)
 
     st2 = ''
