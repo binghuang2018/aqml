@@ -27,6 +27,7 @@ Features
 -  KRR and multi-fidelity KRR
 -  Deep neural network potential (under developement...)
 -  Automatic workflow of generating quantum chemical reference data. The following programs are currently supported:
+
    -  G09
    -  ORCA4
    -  MOLPRO
