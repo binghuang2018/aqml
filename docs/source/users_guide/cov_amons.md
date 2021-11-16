@@ -1,4 +1,6 @@
-## Amons generation and visualization
+
+Amons generation and visualization
+==================================
 
 In this section, the basic usage of the code is illustrated for an exmplified QM9 molecule.
 

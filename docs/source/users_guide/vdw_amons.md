@@ -1,5 +1,8 @@
-# vdW amons generation
 
+vdW amons generation
+=====================
+
+Here we illustrate how to generate vdW amons.
 
 ```python
 from rdkit import Chem
@@ -16,24 +19,13 @@ import aqml.cheminfo.molecule.elements as el #import Elements
 fs = io2.cmdout('ls ../../tests/vdw/*sdf')
 fs
 ```
-
-    WARNING:root:Open Babel >3.0 not found. Format conversion disabled.
-
-
-
-
-
     ['../../tests/vdw/AT.sdf', '../../tests/vdw/GC.sdf']
-
-
 
 
 ```python
 vr = cdc.draw_rdkit()
 vr.viewm(fs[-1], woH=False) 
 ```
-
-
 
 
     
@@ -52,24 +44,14 @@ m = crr.StringM(fs[-1])
 
 Here are a list of non-covalent bonds:
 
-
 ```python
 m.ncbs 
 ```
 
-
-
-
     [[5, 25], [13, 22], [14, 20], [20, 25]]
 
 
-
-
-```python
-
-```
-
-
+Now we are ready for generation.
 ```python
 import aqml.cheminfo.algo.amon as caa
 
@@ -139,16 +121,14 @@ print('number of conformers: ', len(obj.ms))
     number of molecular graphs:  57
     number of conformers:  58
 
+Note that by default we have used `M='cml1'` as the molecular representation to prune conformers that are very similar. Other options could also be used, e.g., `rmsd`.
 
+For visualization, we use
 
 ```python
 vr.viewms(obj.ms, wlgd_text='id', nmr=8, molSize=(90,100))
 ```
 
-
-
-
-    
 ![svg](vdw_8_0.svg)
     
 

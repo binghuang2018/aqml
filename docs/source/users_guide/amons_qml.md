@@ -1,3 +1,7 @@
+
+Amons-based QML
+===============
+
 In the section, we cover
 - basic I/O, i.e., reading/writing info from xyz files and output files from quantum chemistry programs such as orca4
 - generation of molecular representations: SLATM and its local conterpart
@@ -12,7 +16,6 @@ In the section, we cover
 
 ```python
 import aqml.io2 as io2
-
 ```
 
 
@@ -21,9 +24,6 @@ import aqml.io2 as io2
 fs = io2.cmdout('ls ../../demo/example/reference/g7/f*z')
 fs
 ```
-
-
-
 
     ['../../demo/example/reference/g7/frag_01_c00001.xyz',
      '../../demo/example/reference/g7/frag_02_c00001.xyz',
@@ -43,17 +43,11 @@ fs
      '../../demo/example/reference/g7/frag_13_c00001.xyz']
 
 
-
-
-```python
-
-```
-
 A typical xyz file (to be used by `aqml`) looks like:
 
 
 ```python
-!cat ../../demo/example/reference/g7/frag_01_c00001.xyz
+  cat ../../demo/example/reference/g7/frag_01_c00001.xyz
 ```
 
     5

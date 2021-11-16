@@ -1,13 +1,13 @@
-========
-What it is
-========
+
+# The `aqml`
+
+
+## What it is
 
 AQML is a mixed Python/Fortran/C++ package, intends to simulate quantum chemistry problems through the use of amons --- the fundamental building blocks of larger systems (such as protein, solid).
 
 
-========
-Features:
-========
+## Features
 
 - Amons selection algorithm: automatic sampling of training set that are most representative for the query
   - composition and size-independent
@@ -32,8 +32,7 @@ Features:
 
 
 
-Purpose of `aqml`
-==============================
+## Purpose of `aqml`
 
 - training set selection
 - representation design
