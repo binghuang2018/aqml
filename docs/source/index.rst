@@ -12,7 +12,7 @@
    :caption: Introduction
    :hidden:
 
-   intro/install
+   intro/intro
    intro/representation
    intro/amons
 
