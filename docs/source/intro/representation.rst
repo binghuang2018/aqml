@@ -1,12 +1,19 @@
+=========================
+Molecular representations
+=========================
+
 This section details some of the main representations used in `aqml`.
 
-## Many-body representation in a nutshell
+Many-body representation in a nutshell
+======================================
 MBR is perhaps the most popular type of representation, among the many variants in literature.
 
-## BAML
+BAML
+====
 [Todo]
 
-## atomic Spectrum of Axilrod-Teller-Muto potential (aSLATM)
+atomic Spectrum of Axilrod-Teller-Muto potential (aSLATM)
+=========================================================
 Several versions of SLATM are available. The most concise \& vectorized version is obtained through `numpy` \& `itertools`. Take as an example the generation of aSLATM for an atom with atomic index `ia0`.
 
 The prerequisite is to generate all possible types of many-body terms, each being characterized by a tuple of Z's. I.e., the unique 1-body terms are:
