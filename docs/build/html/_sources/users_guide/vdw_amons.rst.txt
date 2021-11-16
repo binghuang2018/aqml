@@ -134,5 +134,4 @@ For visualization, we use
 .. figure:: vdw_8_0.svg
    :alt: svg
 
-   svg
 
