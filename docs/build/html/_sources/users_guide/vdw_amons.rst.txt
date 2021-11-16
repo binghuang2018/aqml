@@ -1,68 +1,68 @@
-
 vdW amons generation
-=====================
+====================
 
 Here we illustrate how to generate vdW amons.
 
-```python
-from rdkit import Chem
-from aqml import io2
-import aqml.cheminfo.rdkit.rdkit as crr
-import aqml.cheminfo.draw.core as cdc
-import aqml.cheminfo.rdkit.core  as crc
+.. code:: python
 
-import aqml.cheminfo.molecule.elements as el #import Elements
-#from importlib import reload
-#reload(crc); reload(el)
+    from rdkit import Chem
+    from aqml import io2
+    import aqml.cheminfo.rdkit.rdkit as crr
+    import aqml.cheminfo.draw.core as cdc
+    import aqml.cheminfo.rdkit.core  as crc
 
-# search for all files under directory vdw/
-fs = io2.cmdout('ls ../../tests/vdw/*sdf')
-fs
-```
-    ['../../tests/vdw/AT.sdf', '../../tests/vdw/GC.sdf']
+    import aqml.cheminfo.molecule.elements as el #import Elements
+    #from importlib import reload
+    #reload(crc); reload(el)
 
+    # search for all files under directory vdw/
+    fs = io2.cmdout('ls tests/vdw/*sdf')
+    fs
 
-```python
-vr = cdc.draw_rdkit()
-vr.viewm(fs[-1], woH=False) 
-```
+::
 
+    ['tests/vdw/AT.sdf', 'tests/vdw/GC.sdf']
 
-    
-![svg](vdw_2_0.svg)
-    
+.. code:: python
 
+    vr = cdc.draw_rdkit()
+    vr.viewm(fs[-1], woH=False) 
 
+.. figure:: vdw_2_0.svg
+   :alt: svg
 
+   svg
+.. code:: python
 
-```python
-import aqml.cheminfo.rdkit.rdkit as crr
+    import aqml.cheminfo.rdkit.rdkit as crr
 
-m = crr.StringM(fs[-1])
-
-```
+    m = crr.StringM(fs[-1])
 
 Here are a list of non-covalent bonds:
 
-```python
-m.ncbs 
-```
+.. code:: python
+
+    m.ncbs 
+
+::
 
     [[5, 25], [13, 22], [14, 20], [20, 25]]
 
-
 Now we are ready for generation.
-```python
-import aqml.cheminfo.algo.amon as caa
 
-# `wg`: write geometry of amons to files? True/False
-fs1 = [fs[-1] ]
-obj = caa.ParentMols(fs1, k=8, k2=11, ivdw=True, verbose=1, wg=False, i3d=True)
-print('number of molecular graphs: ', len(obj.cans))
-print('number of conformers: ', len(obj.ms))
-```
+.. code:: python
 
-    #Mid 1 ../../tests/vdw/GC.sdf
+    import aqml.cheminfo.algo.amon as caa
+
+    # `wg`: write geometry of amons to files? True/False
+    fs1 = [fs[-1] ]
+    obj = caa.ParentMols(fs1, k=8, k2=11, ivdw=True, verbose=1, wg=False, i3d=True)
+    print('number of molecular graphs: ', len(obj.cans))
+    print('number of conformers: ', len(obj.ms))
+
+::
+
+    #Mid 1 tests/vdw/GC.sdf
     r56= [0 1 3 4 6 7]
     r56= [0 1 3 4 6 7]
     r56= [1 2 4 5 6 7]
@@ -103,8 +103,8 @@ print('number of conformers: ', len(obj.ms))
          done within time:  0.005838155746459961  seconds
       ++ found 0 vdw amons with ncomb=3
     atom indices of all amons done
-    
-    
+
+
         post-screening: found vdw amons N=CN.Nc1cc(=O)[nH]cn1 with changed hyb, skip!
         post-screening: found vdw amons N=CN.NC=CC(N)=O with changed hyb, skip!
         post-screening: found vdw amons C=CC(=N)N.NC=CC(N)=O with changed hyb, skip!
@@ -121,15 +121,18 @@ print('number of conformers: ', len(obj.ms))
     number of molecular graphs:  57
     number of conformers:  58
 
-Note that by default we have used `M='cml1'` as the molecular representation to prune conformers that are very similar. Other options could also be used, e.g., `rmsd`.
+Note that by default we have used ``M='cml1'`` as the molecular
+representation to prune conformers that are very similar. Other options
+could also be used, e.g., ``rmsd``.
 
 For visualization, we use
 
-```python
-vr.viewms(obj.ms, wlgd_text='id', nmr=8, molSize=(90,100))
-```
+.. code:: python
 
-![svg](vdw_8_0.svg)
-    
+    vr.viewms(obj.ms, wlgd_text='id', nmr=8, molSize=(90,100))
 
+.. figure:: vdw_8_0.svg
+   :alt: svg
+
+   svg
 

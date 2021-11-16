@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Amons-based QML &mdash; AQML 2.1 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+        <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="vdW amons generation" href="vdw_amons.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> AQML
+          </a>
+              <div class="version">
+                1.1
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Introduction</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../intro/intro.html">The <code class="docutils literal notranslate"><span class="pre">aqml</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../intro/representation.html">Molecular representations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../intro/amons.html">What are amons?</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User's guide</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="cov_amons.html">Amons generation and visualization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vdw_amons.html">vdW amons generation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Amons-based QML</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#basic-i-o">Basic I/O</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#reading-from-xyz-files">Reading from xyz files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#reading-from-orca-output-file">Reading from orca output file</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#generation-of-slatm-and-ml-krr">Generation of SLATM and ML (KRR)</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">AQML</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Amons-based QML</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/users_guide/amons_qml.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="amons-based-qml">
+<h1>Amons-based QML<a class="headerlink" href="#amons-based-qml" title="Permalink to this headline"></a></h1>
+<p>In the section, we cover</p>
+<ul class="simple">
+<li><p>basic I/O, i.e., reading/writing info from xyz files and output files from quantum chemistry programs such as orca4</p></li>
+<li><p>generation of molecular representations: SLATM and its local conterpart</p></li>
+<li><p>run KRR training/test based on SLATM</p></li>
+</ul>
+<p>Again, one has to <code class="docutils literal notranslate"><span class="pre">cd</span></code> to the main directory of <code class="docutils literal notranslate"><span class="pre">aqml</span></code>.</p>
+<section id="basic-i-o">
+<h2>Basic I/O<a class="headerlink" href="#basic-i-o" title="Permalink to this headline"></a></h2>
+<section id="reading-from-xyz-files">
+<h3>Reading from xyz files<a class="headerlink" href="#reading-from-xyz-files" title="Permalink to this headline"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">aqml.io2</span> <span class="k">as</span> <span class="nn">io2</span>
+</pre></div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># get amons data used for training, as stored in xyz files</span>
+<span class="n">fs</span> <span class="o">=</span> <span class="n">io2</span><span class="o">.</span><span class="n">cmdout</span><span class="p">(</span><span class="s1">&#39;ls demo/example/reference/g7/f*z&#39;</span><span class="p">)</span>
+<span class="n">fs</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="s1">&#39;../../demo/example/reference/g7/frag_01_c00001.xyz&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;../../demo/example/reference/g7/frag_02_c00001.xyz&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;../../demo/example/reference/g7/frag_03_c00001.xyz&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;../../demo/example/reference/g7/frag_04_c00001.xyz&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;../../demo/example/reference/g7/frag_05_c00001.xyz&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;../../demo/example/reference/g7/frag_06_c00001.xyz&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;../../demo/example/reference/g7/frag_07_c00001.xyz&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;../../demo/example/reference/g7/frag_07_c00002.xyz&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;../../demo/example/reference/g7/frag_08_c00001.xyz&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;../../demo/example/reference/g7/frag_09_c00001.xyz&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;../../demo/example/reference/g7/frag_10_c00001.xyz&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;../../demo/example/reference/g7/frag_11_c00001.xyz&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;../../demo/example/reference/g7/frag_11_c00002.xyz&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;../../demo/example/reference/g7/frag_12_c00001.xyz&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;../../demo/example/reference/g7/frag_12_c00002.xyz&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;../../demo/example/reference/g7/frag_13_c00001.xyz&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>A typical xyz file (to be used by <code class="docutils literal notranslate"><span class="pre">aqml</span></code>) looks like:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>!cat demo/example/reference/g7/frag_01_c00001.xyz
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mi">5</span>
+<span class="n">alpha</span><span class="o">=</span><span class="mf">13.42</span> <span class="n">b3lypvdz</span><span class="o">=-</span><span class="mf">40.480429212044</span>
+     <span class="n">C</span>     <span class="o">-</span><span class="mf">1.54626100</span>      <span class="mf">0.73185600</span>      <span class="mf">0.67141100</span>
+     <span class="n">H</span>     <span class="o">-</span><span class="mf">1.73565800</span>      <span class="mf">0.47084700</span>      <span class="mf">1.72356700</span>
+     <span class="n">H</span>     <span class="o">-</span><span class="mf">1.64277500</span>      <span class="mf">1.82028800</span>      <span class="mf">0.53911200</span>
+     <span class="n">H</span>     <span class="o">-</span><span class="mf">0.52974600</span>      <span class="mf">0.41588200</span>      <span class="mf">0.39233400</span>
+     <span class="n">H</span>     <span class="o">-</span><span class="mf">2.27556000</span>      <span class="mf">0.21702800</span>      <span class="mf">0.02997500</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">alpha</span></code> and <code class="docutils literal notranslate"><span class="pre">b3lypvdz</span></code> are the polarizability (in
+Bohr<span class="math notranslate nohighlight">\(^3\)</span>) and total energy (in Hartree) of CH4 molecule.
+<code class="docutils literal notranslate"><span class="pre">b3lypvdz</span></code> indicates that all properties were calculated at the level
+of theory <code class="docutils literal notranslate"><span class="pre">b3lyp/cc-pvdz</span></code> (by orca4, if not otherwise stated).</p>
+<p>To read geometry together with all properties of one molecule (say,
+CH4), do the following</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">aqml.cheminfo.core</span> <span class="k">as</span> <span class="nn">cc</span>
+
+<span class="n">mol</span> <span class="o">=</span> <span class="n">cc</span><span class="o">.</span><span class="n">molecule</span><span class="p">(</span><span class="n">fs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">])</span>
+<span class="n">mol</span><span class="o">.</span><span class="n">props</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s1">&#39;alpha&#39;</span><span class="p">:</span> <span class="n">array</span><span class="p">([</span><span class="mf">13.42</span><span class="p">]),</span> <span class="s1">&#39;b3lypvdz&#39;</span><span class="p">:</span> <span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mf">25401.85283769</span><span class="p">])}</span>
+</pre></div>
+</div>
+<p>Note that atomic units for energetic properties would be automaically
+converted to units that are used more favorably by Chemists, namely,
+kcal/mol.</p>
+<p>To read geometries and all properties of multiple molecules (say, the
+first 5 mols):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">mols</span> <span class="o">=</span> <span class="n">cc</span><span class="o">.</span><span class="n">molecules</span><span class="p">(</span><span class="n">fs</span><span class="p">[:</span><span class="mi">5</span><span class="p">],</span> <span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">])</span>
+<span class="n">mols</span><span class="o">.</span><span class="n">props</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s1">&#39;alpha&#39;</span><span class="p">:</span> <span class="n">array</span><span class="p">([[</span><span class="mf">13.42</span><span class="p">],</span>
+        <span class="p">[</span><span class="mf">21.68</span><span class="p">],</span>
+        <span class="p">[</span><span class="mf">13.57</span><span class="p">],</span>
+        <span class="p">[</span><span class="mf">33.96</span><span class="p">],</span>
+        <span class="p">[</span><span class="mf">25.19</span><span class="p">]]),</span> <span class="s1">&#39;b3lypvdz&#39;</span><span class="p">:</span> <span class="n">array</span><span class="p">([[</span><span class="o">-</span><span class="mf">25401.85283769</span><span class="p">],</span>
+        <span class="p">[</span><span class="o">-</span><span class="mf">49280.26416003</span><span class="p">],</span>
+        <span class="p">[</span><span class="o">-</span><span class="mf">71817.46145015</span><span class="p">],</span>
+        <span class="p">[</span><span class="o">-</span><span class="mf">73935.93419366</span><span class="p">],</span>
+        <span class="p">[</span><span class="o">-</span><span class="mf">96479.43688458</span><span class="p">]])}</span>
+</pre></div>
+</div>
+<p>Note that the second entry of function <code class="docutils literal notranslate"><span class="pre">cc.molecule</span></code> and
+<code class="docutils literal notranslate"><span class="pre">cc.molecules</span></code> is the list of names of properties. If it’s set to
+<code class="docutils literal notranslate"><span class="pre">['a']</span></code>, then all properties would be read and it’s equivalent to
+specify the second entry to <code class="docutils literal notranslate"><span class="pre">['alpha','b3lypvdz']</span></code>.</p>
+</section>
+<section id="reading-from-orca-output-file">
+<h3>Reading from orca output file<a class="headerlink" href="#reading-from-orca-output-file" title="Permalink to this headline"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">aqml.io2.orca</span> <span class="k">as</span> <span class="nn">orca</span>
+
+<span class="c1">#from importlib import reload</span>
+<span class="c1">#reload(orca)</span>
+</pre></div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">fs</span> <span class="o">=</span> <span class="n">io2</span><span class="o">.</span><span class="n">cmdout</span><span class="p">(</span><span class="s1">&#39;ls ../../demo/example/reference/g7/f*out&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">obj</span> <span class="o">=</span> <span class="n">orca</span><span class="o">.</span><span class="n">orcajob</span><span class="p">(</span><span class="n">fs</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>Note that only serial mode is supported, i.e., one output file each
+time.</p>
+<p>Now get the method and total energy from the output file:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">obj</span><span class="o">.</span><span class="n">e</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s1">&#39;b3lypvdz&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mf">40.480429212044</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>Output file produced by other programs such as <code class="docutils literal notranslate"><span class="pre">Molpro</span></code>,
+<code class="docutils literal notranslate"><span class="pre">Gaussian</span> <span class="pre">09</span></code> are also supported and the corresponding usages will be
+documented in the near future.</p>
+</section>
+</section>
+<section id="generation-of-slatm-and-ml-krr">
+<h2>Generation of SLATM and ML (KRR)<a class="headerlink" href="#generation-of-slatm-and-ml-krr" title="Permalink to this headline"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">cml.algo.aqml</span> <span class="k">as</span> <span class="nn">aq</span>
+<span class="n">reload</span><span class="p">(</span><span class="n">aq</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">module</span> <span class="s1">&#39;cml.algo.aqml&#39;</span> <span class="kn">from</span> <span class="s1">&#39;/home/bing/anaconda3/lib/python3.7/site-packages/cml/algo/aqml.py&#39;</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">T</span><span class="p">,</span> <span class="n">F</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">False</span>
+
+<span class="c1"># root directory storing all relevant data</span>
+<span class="n">root</span> <span class="o">=</span> <span class="s1">&#39;../../demo/example/reference/&#39;</span>
+
+<span class="c1"># amons data are stored in in xyz files under folder `g7`</span>
+<span class="n">train</span> <span class="o">=</span> <span class="p">[</span><span class="n">root</span> <span class="o">+</span> <span class="s1">&#39;g7/&#39;</span><span class="p">]</span>
+
+<span class="c1"># test data are stored in xyz file under folder `target/`</span>
+<span class="n">test</span> <span class="o">=</span> <span class="p">[</span><span class="n">root</span> <span class="o">+</span> <span class="s1">&#39;target/&#39;</span><span class="p">]</span>
+
+<span class="c1"># representation generation and krr can be done within one line of commmand</span>
+<span class="n">obj</span> <span class="o">=</span> <span class="n">aq</span><span class="o">.</span><span class="n">calculator</span><span class="p">(</span><span class="n">iaml</span><span class="o">=</span><span class="n">T</span><span class="p">,</span>
+                 <span class="n">train</span><span class="o">=</span><span class="n">train</span><span class="p">,</span> <span class="n">test</span><span class="o">=</span><span class="n">test</span><span class="p">,</span> <span class="n">lambdas</span><span class="o">=</span><span class="p">[</span><span class="mf">4.0</span><span class="p">],</span> <span class="n">coeffs</span><span class="o">=</span><span class="p">[</span><span class="mf">1.</span><span class="p">],</span> <span class="n">kernel</span><span class="o">=</span><span class="s1">&#39;g&#39;</span><span class="p">,</span>
+                 <span class="n">rcut</span><span class="o">=</span><span class="mf">4.8</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="s1">&#39;b3lypvdz&#39;</span><span class="p">,</span> <span class="n">nprocs</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">i_disp_eaq</span><span class="o">=</span><span class="n">F</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="n">F</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Now run training &amp; test</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">obj</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="vdw_amons.html" class="btn btn-neutral float-left" title="vdW amons generation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2019, B. Huang.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
