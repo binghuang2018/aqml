@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Amons generation and visualization &mdash; AQML 2.1 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="vdW amons generation" href="vdw_amons.html" />
+    <link rel="prev" title="What are amons?" href="../intro/amons.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> AQML
+          </a>
+              <div class="version">
+                1.1
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Introduction</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../intro/intro.html">The <code class="docutils literal notranslate"><span class="pre">aqml</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../intro/representation.html">Molecular representations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../intro/amons.html">What are amons?</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User's guide</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Amons generation and visualization</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#covalent-amons-generation-for-a-single-query-molecule">Covalent amons generation for a single query molecule</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#covalent-amons-generation-for-multiple-query-molecules">Covalent amons generation for multiple query molecules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#visualization">Visualization</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="vdw_amons.html">vdW amons generation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="amons_qml.html">Amons-based QML</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">AQML</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Amons generation and visualization</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/users_guide/cov_amons.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="amons-generation-and-visualization">
+<h1>Amons generation and visualization<a class="headerlink" href="#amons-generation-and-visualization" title="Permalink to this headline"></a></h1>
+<p>In this section, the basic usage of the code is illustrated for an exmplified QM9 molecule.</p>
+<p>Topics:</p>
+<ul class="simple">
+<li><p>covalent amons generation</p>
+<ul>
+<li><p>for one query</p></li>
+<li><p>for multiple queries</p></li>
+</ul>
+</li>
+<li><p>visualization of amons</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">rdkit</span> <span class="kn">import</span> <span class="n">Chem</span>
+<span class="kn">from</span> <span class="nn">aqml</span> <span class="kn">import</span> <span class="n">io2</span>
+<span class="kn">import</span> <span class="nn">aqml.cheminfo.rdkit.rdkit</span> <span class="k">as</span> <span class="nn">crr</span>
+<span class="kn">import</span> <span class="nn">aqml.cheminfo.draw.core</span> <span class="k">as</span> <span class="nn">cdc</span>
+
+<span class="n">fs</span> <span class="o">=</span> <span class="n">io2</span><span class="o">.</span><span class="n">cmdout</span><span class="p">(</span><span class="s1">&#39;ls ../../tests/cov/*sdf&#39;</span><span class="p">);</span> <span class="n">fs</span>
+</pre></div>
+</div>
+<p>Convert SDF file to RDKit molecule</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">m</span> <span class="o">=</span> <span class="n">crr</span><span class="o">.</span><span class="n">sdf2oem</span><span class="p">(</span><span class="n">fs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>By simply typing <code class="docutils literal notranslate"><span class="pre">m</span></code>, one sees its 2d structure</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">m</span>
+</pre></div>
+</div>
+<p><img alt="png" src="../_images/cov_5_0.png" /></p>
+<p>For more robust visualization, use an enhanced module <code class="docutils literal notranslate"><span class="pre">cheminfo.draw.core</span></code></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">vr</span> <span class="o">=</span> <span class="n">cdc</span><span class="o">.</span><span class="n">draw_rdkit</span><span class="p">()</span>
+<span class="n">vr</span><span class="o">.</span><span class="n">viewm</span><span class="p">(</span><span class="n">fs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">woH</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="c1"># set woH to True if one wants not to show H atoms</span>
+</pre></div>
+</div>
+<p><img alt="svg" src="../_images/cov_7_0.svg" /></p>
+<p>One could see more usages by typing <code class="docutils literal notranslate"><span class="pre">help(vr)</span></code></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+<section id="covalent-amons-generation-for-a-single-query-molecule">
+<h2>Covalent amons generation for a single query molecule<a class="headerlink" href="#covalent-amons-generation-for-a-single-query-molecule" title="Permalink to this headline"></a></h2>
+<p>Note that the python codes below is only for the purpose of diagnosis. It’s recommended to use <code class="docutils literal notranslate"><span class="pre">AQML_ROOT/bin/genamon</span></code> for routine generation of amons.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">aqml.cheminfo.algo.amon</span> <span class="k">as</span> <span class="nn">caa</span>
+
+<span class="c1"># `wg`: write geometry of amons to files? True/False</span>
+<span class="n">fs1</span> <span class="o">=</span> <span class="p">[</span><span class="n">fs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="p">]</span>
+<span class="n">obj</span> <span class="o">=</span> <span class="n">caa</span><span class="o">.</span><span class="n">ParentMols</span><span class="p">(</span><span class="n">fs1</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">wg</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">i3d</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;number of molecular graphs: &#39;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">cans</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;number of conformers: &#39;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">ms</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>number of molecular graphs:  25
+number of conformers:  30
+</pre></div>
+</div>
+<p>Above, <code class="docutils literal notranslate"><span class="pre">k=7</span></code> stands for the maximal number of heavy atoms allowed for an amon is 7, <code class="docutils literal notranslate"><span class="pre">verbose=0</span></code> indicates zero cov regarding details about amons generation. <code class="docutils literal notranslate"><span class="pre">wg=False</span></code> means that no 3D geometry is gonna be written to some file. <code class="docutils literal notranslate"><span class="pre">i3d=True</span></code> suggests that 3D geometry of query molecule are taken into account.</p>
+<p>As one can see, more conformers (totalling 30 were generated). This is due to the fact that there might be more than 1 conformer for a given molecular graph (in particular for those molecules containing flexible/rotatable bonds).</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">smiles</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">cans</span>
+<span class="n">smiles</span>
+</pre></div>
+</div>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>[&#39;C&#39;,
+ &#39;O&#39;,
+ &#39;C=C&#39;,
+ &#39;CC&#39;,
+ &#39;CO&#39;,
+ &#39;C=CC&#39;,
+ &#39;C=CO&#39;,
+ &#39;CCC&#39;,
+ &#39;CCO&#39;,
+ &#39;C=C(C)O&#39;,
+ &#39;C=CCC&#39;,
+ &#39;C=CCO&#39;,
+ &#39;CC(C)O&#39;,
+ &#39;C=C(O)CC&#39;,
+ &#39;C=C(O)CO&#39;,
+ &#39;C=CC(C)C&#39;,
+ &#39;C=CC(C)O&#39;,
+ &#39;c1ccoc1&#39;,
+ &#39;C=C(O)C(C)C&#39;,
+ &#39;C=C(O)C(C)O&#39;,
+ &#39;C=CC(C)(C)O&#39;,
+ &#39;Cc1ccco1&#39;,
+ &#39;C=C(O)C(C)(C)O&#39;,
+ &#39;CCc1ccco1&#39;,
+ &#39;OCc1ccco1&#39;]
+</pre></div>
+</div>
+<p>Note that if <code class="docutils literal notranslate"><span class="pre">i3d</span></code> was set to <code class="docutils literal notranslate"><span class="pre">False</span></code> (set <code class="docutils literal notranslate"><span class="pre">iwa=False</span></code> meanwhile, i.e., do not write SMILES to a file; if one uses default option of <code class="docutils literal notranslate"><span class="pre">iwa</span></code>, which is <code class="docutils literal notranslate"><span class="pre">True</span></code>, then one needs so specify the filename through <code class="docutils literal notranslate"><span class="pre">label=&lt;string&gt;</span></code>), then the same set of <code class="docutils literal notranslate"><span class="pre">smiles</span></code> would be generated, but with no conformers.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">obj_c0</span> <span class="o">=</span> <span class="n">caa</span><span class="o">.</span><span class="n">ParentMols</span><span class="p">(</span><span class="n">fs1</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">wg</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">i3d</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">iwa</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;number of molecular graphs: &#39;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">obj_c0</span><span class="o">.</span><span class="n">cans</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;number of conformers: &#39;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">obj_c0</span><span class="o">.</span><span class="n">ms</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>number of molecular graphs:  31
+number of conformers:  0
+</pre></div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</section>
+<section id="covalent-amons-generation-for-multiple-query-molecules">
+<h2>Covalent amons generation for multiple query molecules<a class="headerlink" href="#covalent-amons-generation-for-multiple-query-molecules" title="Permalink to this headline"></a></h2>
+<p>Note that the python codes below is only for the purpose of diagnosis. It’s recommended to use <code class="docutils literal notranslate"><span class="pre">AQML_ROOT/bin/genamon</span></code> for routine generation of amons.</p>
+<p>Procedure for this is basically the same as for the case of single query, with one minor exception that a new map file is generated meanwhile. See below for details.</p>
+<p>Here, we generate amons of all 3 test molecules.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># `wg`: write geometry of amons to files? True/False</span>
+<span class="n">obj3</span> <span class="o">=</span> <span class="n">caa</span><span class="o">.</span><span class="n">ParentMols</span><span class="p">(</span><span class="n">fs</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">wg</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> 
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;number of molecular graphs: &#39;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">obj3</span><span class="o">.</span><span class="n">cans</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;number of conformers: &#39;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">obj3</span><span class="o">.</span><span class="n">ms</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>number of molecular graphs:  42
+number of conformers:  66
+</pre></div>
+</div>
+<p>Now to get an idea of which sets of amons belong to which query, we have to have a look at the attribute <code class="docutils literal notranslate"><span class="pre">maps</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">obj3</span><span class="o">.</span><span class="n">maps</span>
+</pre></div>
+</div>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>array([[ 0,  2,  4,  9,  7, 38, 13, 36, 57, 14, 29, 53, 39, 15, 37, 61,
+        58, 50, 16, 30, 54, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+       [ 0,  2,  3,  4,  9,  7, 40, 18, 42, 63, 23, 31, 55, 41, 15, 19,
+        43, 62, 64, 51, 24, 17, 32, 56, -1, -1, -1, -1, -1, -1],
+       [ 0,  1,  5,  6,  2,  8, 44,  7, 12, 49, 22, 28, 65, 11, 34, 46,
+        20, 26, 59, 10, 25, 48, 52, 35, 47, 33, 45, 21, 27, 60]])
+</pre></div>
+</div>
+<p>The shape of <code class="docutils literal notranslate"><span class="pre">maps</span></code> is <code class="docutils literal notranslate"><span class="pre">(3,</span> <span class="pre">30)</span></code>, where <code class="docutils literal notranslate"><span class="pre">3</span></code> corresponds to the number of queries, while <code class="docutils literal notranslate"><span class="pre">30</span></code> indicates the maximal number of amons to which a query could be decomposed. In this very case, molecular <code class="docutils literal notranslate"><span class="pre">3</span></code> (<code class="docutils literal notranslate"><span class="pre">03.sdf</span></code>) turns out to be such a query that is made up of the most diverse atomic environments. For query with less than <code class="docutils literal notranslate"><span class="pre">30</span></code> amons, relevant entries with no amon correspondence are padded by <code class="docutils literal notranslate"><span class="pre">-1</span></code>. Note that all non-negative entries correspond to the conformer index (when <code class="docutils literal notranslate"><span class="pre">i3d=True</span></code>) and begin with 0, i.e., the first conformer in <code class="docutils literal notranslate"><span class="pre">obj3.ms</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</section>
+<section id="visualization">
+<h2>Visualization<a class="headerlink" href="#visualization" title="Permalink to this headline"></a></h2>
+<p>To visualize the pseudo-3D geometries of these amon conformers, use <code class="docutils literal notranslate"><span class="pre">vr.viewms</span></code></p>
+<p>Here are some essential parameters of this function:</p>
+<ul class="simple">
+<li><p>nmr: number of molecules per row to be displayed</p></li>
+<li><p>wlgd_text: description text for each conformer, could be one of ‘id’, ‘smiles’</p></li>
+<li><p>molSize: the size of the image for each molecule</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>
+
+```python
+vr.viewms(obj.ms, wlgd_text=&#39;id&#39;, nmr=8, molSize=(90,100))
+</pre></div>
+</div>
+<p><img alt="svg" src="../_images/cov_25_0.svg" /></p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../intro/amons.html" class="btn btn-neutral float-left" title="What are amons?" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="vdw_amons.html" class="btn btn-neutral float-right" title="vdW amons generation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2019, B. Huang.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

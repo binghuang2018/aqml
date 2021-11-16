@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The aqml &mdash; AQML 2.1 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Molecular representations" href="representation.html" />
+    <link rel="prev" title="Welcome to AQML’s documentation!" href="../index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> AQML
+          </a>
+              <div class="version">
+                1.1
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Introduction</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">The <code class="docutils literal notranslate"><span class="pre">aqml</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#what-it-is">What it is</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#features">Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#purpose-of-aqml">Purpose of <code class="docutils literal notranslate"><span class="pre">aqml</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="representation.html">Molecular representations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="amons.html">What are amons?</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User's guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../users_guide/cov_amons.html">Amons generation and visualization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../users_guide/vdw_amons.html">vdW amons generation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../users_guide/amons_qml.html">Amons-based QML</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">AQML</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>The <code class="docutils literal notranslate"><span class="pre">aqml</span></code></li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/intro/intro.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="the-aqml">
+<h1>The <code class="docutils literal notranslate"><span class="pre">aqml</span></code><a class="headerlink" href="#the-aqml" title="Permalink to this headline"></a></h1>
+<section id="what-it-is">
+<h2>What it is<a class="headerlink" href="#what-it-is" title="Permalink to this headline"></a></h2>
+<p>AQML is a mixed Python/Fortran/C++ package, intends to simulate quantum chemistry problems through the use of amons — the fundamental building blocks of larger systems (such as protein, solid).</p>
+</section>
+<section id="features">
+<h2>Features<a class="headerlink" href="#features" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>Amons selection algorithm: automatic sampling of training set that are most representative for the query</p>
+<ul>
+<li><p>composition and size-independent</p></li>
+<li><p>currently limited to molecule/solid with explicit graph (w/wo periodic boundary condition)</p></li>
+</ul>
+</li>
+<li><p>Molecular representation</p>
+<ul>
+<li><p>Parameter-free global SLATM (Spectrum of London and Axilrod-Teller-Muto potential) representations</p>
+<ul>
+<li><p>global SLATM and its local (atomic) counterpart aSLATM.</p></li>
+<li><p>A new pair-wise version of aSLATM is available, dealing favorably with dataset involving many elements.</p></li>
+</ul>
+</li>
+<li><p>Bond, Angle ML (BAML) representation, including up to 4-body potential (UFF inspired)</p></li>
+<li><p>Graph-based representation (coming soon…)</p></li>
+</ul>
+</li>
+<li><p>Machine learning</p>
+<ul>
+<li><p>KRR and multi-fidelity KRR</p></li>
+<li><p>Deep neural network potential (under developement…)</p></li>
+</ul>
+</li>
+<li><p>Automatic workflow of generating quantum chemical reference data. The following programs are currently supported:</p>
+<ul>
+<li><p>G09</p></li>
+<li><p>ORCA4</p></li>
+<li><p>MOLPRO</p></li>
+<li><p>CASINO (a QMC package)</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="purpose-of-aqml">
+<h2>Purpose of <code class="docutils literal notranslate"><span class="pre">aqml</span></code><a class="headerlink" href="#purpose-of-aqml" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>training set selection</p></li>
+<li><p>representation design</p></li>
+<li><p>ML algorithm</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../index.html" class="btn btn-neutral float-left" title="Welcome to AQML’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="representation.html" class="btn btn-neutral float-right" title="Molecular representations" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2019, B. Huang.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
