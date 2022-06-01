@@ -1085,7 +1085,7 @@ class ParentMol(coo.StringM):
                                     #    continue
                                     sets = [ set(i4s) for i4s in newm.ats_ic4ex2c ]
                                     if self.verbose:print('    found PhCH=CH2 or alike')
-                                    if np.all(imeso[idxs[0][-2:]]):
+                                    if np.all(imeso[ list(idxs[0][-2:]) ]):
                                         # the two last atoms are in mesomeric env in the query mol, keep this
                                         # amon so as to account for conjugation effects!
                                         if self.verbose:print('    where a) all atoms were mesomeric in q, keep it!')
