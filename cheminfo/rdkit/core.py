@@ -790,6 +790,17 @@ class newmol(object):
         return self._iasr6
 
     @property
+    def iasr56(self):
+        if not hasattr(self, '_iasr56'):
+            iasmult = self.iasP5orS6
+            iasr5 = self.iasr5
+            iasr5nmv = np.setdiff1d(iasr5, iasmult)
+            iasr6 = self.iasr6
+            iasr6nmv = np.setdiff1d(iasr6, iasmult)
+            self._iasr56 = np.union1d(iasr5nmv,iasr6nmv)
+        return self._iasr56
+
+    @property
     def i5r(self): # contains 5-membered ring?
         if not hasattr(self, '_i5r'):
             self._i5r = ( len(self.iasr5)>0 )
