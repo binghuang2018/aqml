@@ -20,7 +20,7 @@ import itertools as itl
 import tempfile as tpf
 import aqml.cheminfo.graph as cg
 from aqml.cheminfo.molecule.elements import Elements
-#import cml.representation.core as rc
+import cml.representation.core as rc
 import pickle as pkl
 
 #try:
@@ -46,36 +46,10 @@ cnsr = {4:2, 5:3, 6:4, 7:3, 8:2, 9:1, 13:3, 14:4, 15:3, 16:2, 17:1, \
 tvsr1 = {4:2, 5:3, 6:4, 7:3, 8:2, 9:1, 13:3, 14:4, 15:3, 16:2, 17:1, \
         32:4, 33:3, 34:2, 35:1,  50:4,51:3,52:2,53:1}
 
-rscov0 = Elements().rcs #cov
+rscov0 = Elements().rcs
 rsvdw0 = Elements().rvdws
 
 T,F = True,False
-
-def generate_cm(zs, coords, ds=None, inorm=False, \
-                            wz=False, rpower=1.0):
-    """ Coulomb matrix
-    You may consider using `cml1 instead of `cm """
-    na = len(zs)
-    mat = np.zeros((na,na))
-    if ds is None:
-        ds = ssd.squareform( ssd.pdist(coords) )
-    np.fill_diagonal(ds, 1.0)
-    if np.any(ds==0):
-        ias1, ias2 = np.where( np.triu(ds==0) )
-        print(' ******** found atom pairs with dij=0: ', list(zip(ias1,ias2)), 'zs1=', zs[ias1], 'zs2=', zs[ias2])
-        raise Exception('some atoms are too close!')
-    if wz:
-        X, Y = np.meshgrid(self.zs, self.zs)
-        diag = -1. * np.array(self.zs)**2.4
-    else:
-        X, Y = [1., 1.]
-        diag = np.zeros(na)
-    mat = X*Y/ds**rpower
-    np.fill_diagonal(mat, diag)
-    L1s = np.linalg.norm(mat, ord=1, axis=0)
-    ias = np.argsort(L1s)
-    return L1s[ias] if inorm else mat[ias,:][:,ias].ravel()
-
 
 
 class ExtM(object): #coc.newmol):
@@ -88,9 +62,8 @@ class ExtM(object): #coc.newmol):
         self.nav = nav
         iasvq = []
         for i,iaq in enumerate(iasq):
-            if iaq is None: continue
             zi = zs[i]
-            if zi>1:
+            if zi and zi>1:
                 iasvq.append(iaq)
         self.iasvq = iasvq
         naq = len(iasq)
@@ -123,28 +96,15 @@ class ExtM(object): #coc.newmol):
     def generate_coulomb_matrix(self,inorm=False,wz=False,rpower=1.0):
         """ Coulomb matrix
         You may consider using `cml1 instead of `cm """
-        self.cm = generate_cm(self.zs, self.coords, inorm=inorm,
+        self.cm = rc.py_generate_cm(self.zs, self.coords, inorm=inorm,
                         wz=wz, rpower=rpower)
-
-
-def sort_h(zs): #, chgs, bom, coords):
-    """ sort atoms by pushing H's to the end """   
-    ias = np.arange(len(zs))
-    ias1 = ias.copy()
-    _zs = np.array(zs, dtype=int)
-    if (1 in zs):
-        ih1 = ias[_zs==1][0] #zs.index(1)
-        if np.any(_zs[ih1:] > 1): 
-            #print(' ***** hydrogens were pushed to the end')
-            ias1 = np.concatenate((ias[zs>1], ias[zs==1]))
-    return ias1 
 
 
 class molcplx(ExtM):
 
     """ molecular complex object: a combination of two or more ExtM objects """
 
-    def __init__(self, Ms, sort_atom=F):
+    def __init__(self, Ms, keep_atom_order=T):
         self.mols = Ms
         nas = []
         zs = []; coords = []; charges = []; boms = []
@@ -158,7 +118,6 @@ class molcplx(ExtM):
             coords.append( coords1)
             charges.append( charges1)
             boms.append(bom1)
-            #print('  iasq=', M.iasq)
             iasq += M.iasq
             #iash += M.iash
             #iasi = M.iasq + [None]*(na1-M.naq)
@@ -176,15 +135,7 @@ class molcplx(ExtM):
         for i in range(nm):
             ia1 = ias1[i]; ia2 = ias2[i]
             bom[ia1:ia2,ia1:ia2] = boms[i]
-
-        ias1 = sort_h(zs) 
-        zs1 = zs[ias1]
-        chgs1 = charges[ias1]
-        bom1 = bom[ias1][:,ias1]
-        coords1 = coords[ias1]
-        iasq1 = [ iasq[j] for j in ias1 ]
-
-        ExtM.__init__(self, zs1, coords1, bom1, chgs1, iasq=iasq1, can0=can0)
+        ExtM.__init__(self, zs, coords, bom, charges, iasq=iasq, can0=can0)
 
 
 
@@ -640,19 +591,19 @@ class ParentMol(coo.StringM):
         """
         iok = F
         if self.ats_ict0ex2vb:
-            if self.verbose>1: print('    Found in query conj ats w dang=0 & 2 end atoms rij < sum of rvdw')
+            if self.verbose: print('    Found in query conj ats w dang=0 & 2 end atoms rij < sum of rvdw')
             _atsq = []
             for _atsi in newm.ats_ict0ex2vb:
                 _atsq.append( iasq[_atsi] )
             if np.any([ set(_atsj) in self.ats_ict0ex2vb for _atsj in _atsq ]):
-                if self.verbose>1: print('    And this amon contains such local env')
+                if self.verbose: print('    And this amon contains such local env')
                 PL0 = np.max(newm.pls[newm.iasv][:,newm.iasv])
                 if PL0 <= 3:
                     iok = T
                 else:
                     if np.all(newm.iconjs==1) and PL0<=5:
                         iok = T
-                if self.verbose>1:
+                if self.verbose:
                     if iok:
                         print('    found strained & conj env like \\\\__// in query, ')
                         print('    keep it as an amon!')
@@ -660,7 +611,7 @@ class ParentMol(coo.StringM):
                         print('    could not find strained & conj env like \\\\__// ')
                         print('    in query for this amon. Now skip!')
             else:
-                if self.verbose>1:
+                if self.verbose:
                     print('    found local structure \\\\__// or alike, where')
                     print('    two end H atoms are too close and which do not')
                     print('    exist in the query molecule. Drop it!')
@@ -816,14 +767,12 @@ class ParentMol(coo.StringM):
                             # 1 being added below corresp. to atom `i
                             nai = 1 + (np.logical_and(gt.pls[i]>0, gt.pls[i]<=2)).sum()
                             if nai<=8 and nai==nheav:
-                                # the latter criteria is crucial to remove redundant
+                                # the latter criteria is crutial to remove redundant
                                 # amons. E.g., when (CH3)3C-O-C(CH3)3 is selected,
                                 # the redundant (CH3)3C-O-C(C)(C)CC may also be selected.
                                 ifd_extl = T
                                 break
 
-                    allow_all_extl=T
-                    #if not allow_all_extl:
                     if not ifd_extl:
                         continue
 
@@ -934,7 +883,7 @@ class ParentMol(coo.StringM):
                 if np.any(dvsi>1):
                     #print 'dvi>1, implying say, [Cl][O] in query: -ClO3'
                     continue
-                if self.verbose>1: print('\n')
+                if self.verbose: print('\n')
 
                 # now perceive double bonds
                 #print('#########  zsi = ', zs)
@@ -1018,7 +967,7 @@ class ParentMol(coo.StringM):
                 if not np.all(tvs_heav-tvs==0):
                   if self.iwarn and (not self.warning_shown):
                     self.warning_shown = T
-                    if self.verbose>1:
+                    if self.verbose:
                       print(' ** [warning] ** ')
                       print('      Not all dvs==0 for the subg found, check!')
                       print('      This may happen when input is rad, but from which')
@@ -1040,13 +989,13 @@ class ParentMol(coo.StringM):
                     for i,zi in enumerate(zsa):
                         x,y,z = coords[i]
                         si += '%2s %12.6f %12.6f %12.6f\n'%(co.chemical_symbols[zi], x,y,z)
-                    if self.verbose>1:print(si)
+                    if self.verbose:print(si)
                     raise Exception('#ERROR: mol to can failed')
 
                 if '.' in can:
                     continue
 
-                if self.verbose>1:print(' ## can = ', can)
+                if self.verbose:print(' ## can = ', can)
 
                 if can in cans_u:
                     if (nheav <= 2) and (not self.fixGeom) and (not self.ivdw):
@@ -1056,13 +1005,13 @@ class ParentMol(coo.StringM):
                 ## left last time
                 if ifd_extl:
                     #print('can=', can)
-                    newm = coo.StringM(can)
+                    newm = coo.StringM(can) #_newm)
                     if newm.is_conj_amon:
                         ifd_extl = T
                     else:
                         continue
                 if ifd_extl: # and (can not in cans_u):
-                    if self.verbose>1:print(' ##### found larger essential amons with N_I=%d: %s'%(nheav, can))
+                    if self.verbose:print(' ##### found larger essential amons with N_I=%d: %s'%(nheav, can))
                     #ishown = F
 
 
@@ -1073,31 +1022,31 @@ class ParentMol(coo.StringM):
                         if len(ats_cr5_a) > 0:
                             ats_nr_a = np.setdiff1d(newm.iasv, ats_cr5_a) # non-ring atoms
                             if newm.gv[ats_cr5_a][:,ats_nr_a].sum()==1: #(newm.iconjs[ats_nr_a]!=1).sum() >= 1:
-                                if self.verbose>1:print('    # N_I>7 & 5-ring, found only one -R group, skip!')
+                                if self.verbose:print('    # N_I>7 & 5-ring, found only one -R group, skip!')
                                 continue
 
                         if (newm.iconjsv==2).sum()>2:
-                            if self.verbose>1:print('   # N_I>7, found >2 atoms with iconj==2, skip!')
+                            if self.verbose:print('   # N_I>7, found >2 atoms with iconj==2, skip!')
                             continue
 
                         #if len(newm.ats_ict0ex2vb)>=3:
                         if len(newm.ats_ic4ex2c)>=3:
-                            if self.verbose>1:print('   # N_I>7, found tors that are `ic4ex2c >=3 times, skip!')
+                            if self.verbose:print('   # N_I>7, found tors that are `ic4ex2c >=3 times, skip!')
                             continue
                     else:
-                        if self.verbose>1:print('   # N_I>7, but some atom has iconj=0 or >2, skip!')
+                        if self.verbose:print('   # N_I>7, but some atom has iconj=0 or >2, skip!')
                         continue
 
                 # check if atoms in 5-membered conjugated ring is connected to atoms
                 # that are mesomeric in Q
                 ats_meso_q = self.gmeso.ats_meso
                 if len(ats_cr5_a)>0:
-                    if self.verbose>1:print('    # found 5-membered aromatic ring')
+                    if self.verbose:print('    # found 5-membered aromatic ring')
                     istop = F
                     for ia5 in ats_cr5_a:
                         nbrs_i = np.setdiff1d(newm.iasv[ newm.gv[ia5]>0 ], ats_cr5_a)
                         if len( np.intersect1d(_lasi[nbrs_i], ats_meso_q) ) >0: # ar: aromatic ring
-                            if self.verbose>1:print('    found >=1 atoms (in 6-ar of Q) attached to 5-ar, skip!')
+                            if self.verbose:print('    found >=1 atoms (in 6-ar of Q) attached to 5-ar, skip!')
                             istop = T
                             break
                     if istop:
@@ -1106,52 +1055,50 @@ class ParentMol(coo.StringM):
                 # check mesomeric status
                 # This will remove amons like C=c1ccccc1=C
                 if nheav>7 and newm.iconjr:
-                    print('r56=', newm.iasr56)
                     iasr_a = list(newm.iasr56)
                     iasr_l = list(set(newm.ias).difference(set(iasr_a)))
                     iarsq = iars[iasr_a]
                     imesoq = imeso[iasr_a]
                     if newm.aromatic.sum() != iarsq.sum():
-                        if self.verbose>1:print(' #### %s aromatic states of some atoms have changed, skip!'%can)
+                        if self.verbose:print(' #### %s aromatic states of some atoms have changed, skip!'%can)
                         continue
                     na_meso = imeso_a.sum()
 
                     if np.all(imesoq) and (na_meso==0):
                         if can not in ['C=c1ccccc1=C']: ###### need for a final call to determine if this is necessary
-                            if self.verbose>1:print('    # found C=c1ccccc1=C or structure alike, skip!' )
+                            if self.verbose:print('    # found C=c1ccccc1=C or structure alike, skip!' )
                             continue
                         #print('    imeso_a = ', imeso_a, 'imesoq=', imesoq)
 
                     if na_meso > 0:
                         if na_meso != imesoq.sum():
-                            if self.verbose>1:print(' #### %s : mesomeric state of some atoms changed, skip!'%can)
+                            if self.verbose:print(' #### %s : mesomeric state of some atoms changed, skip!'%can)
                             continue
                         else:
                             # now we deal with Ph-CH=CH2 and structures alike
                             if self.i3d and na_meso==6:
                                 _patt = '[a]~[a]~[^2;A]=[^2;A]'
-                                ifd, idxs = coc.is_subg(newm.mol, _patt) #, iop=1)
+                                ifd, idxs, _ = coc.is_subg(newm.mol, _patt, iop=1)
                                 if ifd:
                                     #if newm.cnsv[idxs[0][-1]] == 1:
                                     #    print('    found Ph[^2]=[O;S], skip!')
                                     #    continue
                                     sets = [ set(i4s) for i4s in newm.ats_ic4ex2c ]
-                                    if self.verbose>1:print('    found PhCH=CH2 or alike')
-                                    #print('idxs=', idxs, 'imeso=', imeso)
-                                    if np.all(imeso[list(idxs[0][-2:])]):
+                                    if self.verbose:print('    found PhCH=CH2 or alike')
+                                    if np.all(imeso[ list(idxs[0][-2:]) ]):
                                         # the two last atoms are in mesomeric env in the query mol, keep this
                                         # amon so as to account for conjugation effects!
-                                        if self.verbose>1:print('    where a) all atoms were mesomeric in q, keep it!')
+                                        if self.verbose:print('    where a) all atoms were mesomeric in q, keep it!')
                                     elif np.any([ 90>newm.get_dihedral_angle(i4s)>30 for i4s in idxs ]):
                                         if set(newm.zs[newm.gmeso.ats_meso]) != set([6]):
-                                            if self.verbose>1:print('    found hetero-nuc meso ring (e.g., c1cccnc1), geom turns flat after optg, skip!')
+                                            if self.verbose:print('    found hetero-nuc meso ring (e.g., c1cccnc1), geom turns flat after optg, skip!')
                                             continue
-                                        if self.verbose>1:print('    where b) some tor has an angle > 30 degree, keep it!')
+                                        if self.verbose:print('    where b) some tor has an angle > 30 degree, keep it!')
                                     elif np.all([ set(i4s) not in sets for i4s in idxs ]):
                                         # E.g., Ph-CH=NH, where H points outwards of the plane formed by ats_v
-                                        if self.verbose>1:print('    where no `ats_ic4ex2c exists, keep it!')
+                                        if self.verbose:print('    where no `ats_ic4ex2c exists, keep it!')
                                     else:
-                                        if self.verbose>1:print('    neither a) or b) is satisfied, skip!')
+                                        if self.verbose:print('    neither a) or b) is satisfied, skip!')
                                         continue
 
 
@@ -1173,7 +1120,7 @@ class ParentMol(coo.StringM):
                                     iok = F
                                     break
                 if not iok:
-                    if self.verbose>1:print('## strain status changed: ', can)
+                    if self.verbose:print('## strain status changed: ', can)
                     continue
 
                 # check if it's C=CC=C-R (R=N,O,..., but C)
@@ -1186,7 +1133,7 @@ class ParentMol(coo.StringM):
 
                     # check \\__// and its derivatives
                     if newm.ats_cc4bent and newm.i_ats3_conn_cc4bent:
-                        if self.verbose>1:print('   found \\__// and its derivatives, skip!')
+                        if self.verbose:print('   found \\__// and its derivatives, skip!')
                         continue
 
                 # check if atoms are too crowded in 3d geom
@@ -1194,7 +1141,7 @@ class ParentMol(coo.StringM):
                     if newm.icrowd_cov:
                         newm.write_ctab(None, './crowded/')
                         fot = os.path.basename(newm.opf)
-                        if self.verbose>1:print('    Crowded due to too close cov bond, geom to ./crowded/%s'%fot)
+                        if self.verbose:print('    Crowded due to too close cov bond, geom to ./crowded/%s'%fot)
                         continue
 
                     if self.nogc: # no geometry clash due to H's attached to ats_ict0ex2
@@ -1218,7 +1165,7 @@ class ParentMol(coo.StringM):
                             else:
                                 iclash = T
                         if iclash:
-                            if self.verbose>1:print('   geometry clash found in amons, but not in query. Skip!')
+                            if self.verbose:print('   geometry clash found in amons, but not in query. Skip!')
                             continue
 
                 # now kick out amons that are redundant (i.e., flexible), for which
@@ -1226,7 +1173,7 @@ class ParentMol(coo.StringM):
                 # if newm.irddt and newm.icrowd:
                 if self.irddtout:
                     if newm.irddt:
-                        if self.verbose>1:print('    mol is too flexible')
+                        if self.verbose:print('    mol is too flexible')
                         if not self.i3d:
                             continue
                         else:
@@ -1254,11 +1201,11 @@ class ParentMol(coo.StringM):
                             #    print('    mol is rigid with vdw bond, gone after optg; skip!')
                             #    continue
                             #else:
-                            if self.verbose>1:print('    mol is rigid and contains no vdw bond. keep!')
+                            if self.verbose:print('    mol is rigid and contains no vdw bond. keep!')
 
                 cans_u.append( can )
 
-                if self.verbose>1: print('    \To be accepted/')
+                if self.verbose: print('    \To be accepted/')
 
                 mi = ExtM(zsa, coords, bom=bom, chgs=chgs, iasq=lasi+lasi2, can0=can)
                 if submol is None:
@@ -1354,8 +1301,9 @@ class ParentMols(object):
         """
 
         k0 = k
-        if iextl: ############################################## @@@@@
-            if k0 < 9: k=9
+        if iextl and k0 < 9:
+            iextl = T
+            k = 9
         else:
             iextl = F
         self.iextl = iextl
@@ -1398,9 +1346,9 @@ class ParentMols(object):
             fcan = label + '.can'
             h5f = label + '/map.pkl' # '.pkl'
             fdn = label
-        for fd in [fdn, fdn+'/i-raw/']:
-            if not os.path.exists(fd):
-                os.mkdir(fd)
+            for fd in [fdn, fdn+'/i-raw/']:
+                if not os.path.exists(fd):
+                    os.mkdir(fd)
 
         fin = None
         if log and (label is not None):
@@ -1585,7 +1533,7 @@ class ParentMols(object):
                                     cansij = [cansi_centre[i0], cansi_others[j0]]
                                     cansij.sort()
                                     cansi_U.append( '.'.join(cansij) )
-                                    lms_U.append( molcplx((t1,t2),sort_atom=T) )
+                                    lms_U.append( molcplx(t1, t2) )
                     lms = lms_U; cansi = cansi_U
                     self.io.write(' -- nmi_U = ', len(lms))
                 else:
@@ -1840,19 +1788,13 @@ class ParentMols(object):
                     if verbose: print('\n')
                     for comb in combs:
                         _mc = [ lms[ic] for ic in comb ]
-                        mi2 = molcplx(_mc, sort_atom=T)
+                        mi2 = molcplx(_mc)
                         newmi2 = coc.newmol(mi2.zs, mi2.chgs, mi2.bom, mi2.coords)
 
                         # change of hybs not allowed for vdw amons
-                        if (not fixGeom):
-                            #print('n=',len(obj.hybs), 'mi2.iasvq=', mi2.iasvq)
-                            #print('new hybs=', newmi2.hybsv)
-                            #print('old hybs=', obj.hybs[mi2.iasvq], 'new hybs=', newmi2.hybsv)
-                            #print('old zs=', obj.zs[mi2.iasvq], 'new zs=', newmi2.zs)
-                            if np.any(newmi2.hybsv != obj.hybs[mi2.iasvq]):
-                                if verbose: print('    post-screening: found vdw amons %s with changed hyb, skip!'%mi2.can0)
-                                #sys.exit(2)
-                                continue
+                        if (not fixGeom) and np.any(newmi2.hybsv != obj.hybs[mi2.iasvq]):
+                            if verbose: print('    post-screening: found vdw amons %s with changed hyb, skip!'%mi2.can0)
+                            continue
 
                         if self.debug:
                             print('    ++ found ', mi2.can0)
@@ -2044,7 +1986,7 @@ def get_conn(ipt):
                 if np.any( [ set(b) <= set(mi.iasq+mj.iasq) \
                         for b in obj.ncbs ] ):
                     # now bsv of current mol complex
-                    mc = molcplx([mi,mj], sort_atom=T)
+                    mc = molcplx([mi,mj])
                     c = coc.newmol(mc.zs, mc.chgs, mc.bom, mc.coords)
                     nbv = 0; nbv0 = 0
                     bsv = []; bsv0 = []
