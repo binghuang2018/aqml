@@ -19,7 +19,7 @@ import scipy.spatial.distance as ssd
 import multiprocessing
 import aqml.cheminfo.core as cic
 import aqml.cheminfo.math as cim
-import cml.sd as dd
+#import cml.sd as dd # is no longer available
 import itertools as itl
 import tempfile as tpf
 import aqml.cheminfo.graph as cg

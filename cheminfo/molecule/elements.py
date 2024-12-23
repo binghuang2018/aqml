@@ -1,4 +1,3 @@
-
 import numpy as np
 
 ##############################################################################
@@ -156,7 +155,9 @@ _strings = """  0 0.00 0.00 0.00 0.00  0          0 0.00       0          0 0.07
 117 0.00 1.60 1.60 2.00  6        294 0.00       0          0 0.99 0.00 0.07
 118 0.00 1.60 1.60 2.00  6        294 0.00       0          0 0.99 0.00 0.06"""
 
-_dt = np.array( [ _si.split() for _si in _strings.split('\n') ] ).astype(np.float)
+# _dt = np.array( [ _si.split() for _si in _strings.split('\n') ] ).astype(np.float)
+# update due to np >=1.20 does not support float conversion
+_dt = np.array([_si.split() for _si in _strings.split("\n")]).astype(float)
 
 class Elements(object):
 
@@ -196,4 +197,3 @@ class Elements(object):
             self.rvdws = rvdws[zs]
             self.maxnbs = maxnbs[zs].astype(np.int)
             self.vsr = vsr[zs].astype(np.int)
-
